@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SupCrud by Crudzaso</title>
+  <link rel="stylesheet" href="./assets/css/auth.css">
+  <style>
+    .portal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .portal-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 20px;
+      text-align: center;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      display: block;
+    }
+    .portal-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(59,130,246,0.15);
+    }
+    .portal-card .icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .portal-card .title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+    .portal-card .desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .portal-card.owner { border-color: rgba(59,130,246,0.3); }
+    .portal-card.owner .icon { filter: hue-rotate(0deg); }
+  </style>
+</head>
+<body>
+  <div class="auth-wrapper" style="max-width:480px">
+
+    <div class="auth-brand">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">Sup<span>Crud</span></div>
+      </div>
+      <div class="tagline">by Crudzaso · Sistema PQRS</div>
+    </div>
+
+    <div class="auth-card">
+      <h2>Bienvenido</h2>
+      <p class="subtitle">Selecciona tu portal de acceso para continuar</p>
+
+      <div class="portal-grid">
+        <a href="/owner/login" class="portal-card owner">
+          <span class="icon">👑</span>
+          <div class="title">Owner</div>
+          <div class="desc">Administración global de la plataforma</div>
+        </a>
+        <a href="/workspace/login" class="portal-card">
+          <span class="icon">🏢</span>
+          <div class="title">Workspace</div>
+          <div class="desc">Acceso como Admin o Agente</div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

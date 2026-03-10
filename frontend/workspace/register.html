@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro · SupCrud</title>
+  <link rel="stylesheet" href="../assets/css/auth.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+
+    <div class="auth-brand">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">Sup<span>Crud</span></div>
+      </div>
+      <div class="tagline">by Crudzaso · Crear cuenta</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="role-badge"><span class="dot"></span> Admin / Agent</div>
+      <h2>Crear cuenta</h2>
+      <p class="subtitle">Después de registrarte un admin debe agregarte a un workspace</p>
+
+      <div class="form-group">
+        <label for="fullName">Nombre completo</label>
+        <input type="text" id="fullName" placeholder="Juan Pérez">
+        <div class="field-error" id="fullNameError">El nombre es requerido</div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" placeholder="tu@email.com">
+        <div class="field-error" id="emailError">Ingresa un email válido</div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" placeholder="Mínimo 6 caracteres">
+        <div class="field-error" id="passwordError">Mínimo 6 caracteres</div>
+      </div>
+
+      <div class="form-group">
+        <label for="confirm">Confirmar contraseña</label>
+        <input type="password" id="confirm" placeholder="Repite la contraseña">
+        <div class="field-error" id="confirmError">Las contraseñas no coinciden</div>
+      </div>
+
+      <button class="btn-primary" id="btnRegister">
+        <span class="btn-text">Crear cuenta</span>
+        <div class="spinner"></div>
+      </button>
+
+      <div class="alert" id="alert"></div>
+    </div>
+
+    <div class="auth-footer">
+      ¿Ya tienes cuenta? <a href="/workspace/login">Iniciar sesión</a>
+      &nbsp;·&nbsp;
+      <a href="/">← Volver</a>
+    </div>
+
+  </div>
+
+  <script>
+    const fullNameInput = document.getElementById('fullName');
+    const emailInput    = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const confirmInput  = document.getElementById('confirm');
+    const btnRegister   = document.getElementById('btnRegister');
+    const alertEl       = document.getElementById('alert');
+
+    const showAlert = (message, type) => {
+      alertEl.textContent = (type === 'success' ? '✓ ' : '✕ ') + message;
+      alertEl.className   = `alert ${type} visible`;
+    };
+
+    const setLoading = (loading) => {
+      btnRegister.disabled = loading;
+      btnRegister.classList.toggle('loading', loading);
+    };
+
+    const validate = () => {
+      let valid = true;
+      document.querySelectorAll('.field-error').forEach(e => e.classList.remove('visible'));
+      document.querySelectorAll('input').forEach(i => i.classList.remove('error'));
+
+      if (!fullNameInput.value.trim()) {
+        document.getElementById('fullNameError').classList.add('visible');
+        fullNameInput.classList.add('error');
+        valid = false;
+      }
+      if (!emailInput.value.includes('@')) {
+        document.getElementById('emailError').classList.add('visible');
+        emailInput.classList.add('error');
+        valid = false;
+      }
+      if (passwordInput.value.length < 6) {
+        document.getElementById('passwordError').classList.add('visible');
+        passwordInput.classList.add('error');
+        valid = false;
+      }
+      if (passwordInput.value !== confirmInput.value) {
+        document.getElementById('confirmError').classList.add('visible');
+        confirmInput.classList.add('error');
+        valid = false;
+      }
+      return valid;
+    };
+
+    const handleRegister = async () => {
+      if (!validate()) return;
+      setLoading(true);
+      alertEl.className = 'alert';
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            email:     emailInput.value.trim().toLowerCase(),
+            password:  passwordInput.value,
+            full_name: fullNameInput.value.trim()
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+          showAlert('Cuenta creada exitosamente. Redirigiendo al login...', 'success');
+          setTimeout(() => window.location.href = '/workspace/login', 1500);
+        } else {
+          showAlert(data.message, 'error');
+        }
+      } catch (e) {
+        showAlert('No se pudo conectar con el servidor', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    btnRegister.addEventListener('click', handleRegister);
+    [fullNameInput, emailInput, passwordInput, confirmInput].forEach(input =>
+      input.addEventListener('keydown', e => e.key === 'Enter' && handleRegister())
+    );
+  </script>
+</body>
+</html>

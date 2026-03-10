@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Owner · SupCrud</title>
+  <link rel="stylesheet" href="/assets/css/dashboard.css">
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">Sup<span>Crud</span></div>
+    </div>
+    <div class="sidebar-role">Owner Panel</div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-section="dashboard"><span class="icon">📊</span> Dashboard</div>
+      <div class="nav-item" data-section="workspaces"><span class="icon">🏢</span> Workspaces</div>
+      <div class="nav-item" data-section="usuarios"><span class="icon">👥</span> Usuarios</div>
+      <div class="nav-item" data-section="addons"><span class="icon">🧩</span> Add-ons</div>
+      <div class="nav-item" data-section="owners"><span class="icon">🔑</span> Owners</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="name" id="sidebarName">—</div>
+        <div class="email" id="sidebarEmail">—</div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="topbarTitle">Dashboard</h1>
+      <span class="badge">OWNER</span>
+    </div>
+
+    <div class="content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="section active" id="sec-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="label">Workspaces</div><div class="value" id="statWS">—</div><div class="sub">Total registrados</div></div>
+          <div class="stat-card"><div class="label">Activos</div><div class="value" id="statActive">—</div><div class="sub">Workspaces activos</div></div>
+          <div class="stat-card"><div class="label">Usuarios</div><div class="value" id="statUsers">—</div><div class="sub">Agentes y admins</div></div>
+          <div class="stat-card"><div class="label">Add-ons</div><div class="value" id="statAddons">—</div><div class="sub">En catálogo</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>Bienvenido al panel de administración</h3></div>
+          <div class="panel-body" style="color:var(--text-muted);font-size:0.85rem;line-height:1.8">
+            Gestiona workspaces, usuarios y add-ons desde aquí.<br>
+            En <strong style="color:var(--text)">Workspaces</strong> → botón 🧩 Add-ons para configurar qué add-ons tiene habilitado cada workspace individualmente.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── WORKSPACES ── -->
+      <div class="section" id="sec-workspaces">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Workspaces</h3>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalWorkspace()">+ Nuevo workspace</button>
+          </div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre</th><th>Key</th><th>Dominio</th><th>Miembros</th><th>Estado</th><th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyWorkspaces">
+                  <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── USUARIOS ── -->
+      <div class="section" id="sec-usuarios">
+        <div class="panel" style="margin-bottom:20px">
+          <div class="panel-header"><h3>Asignar usuario a workspace</h3></div>
+          <div class="panel-body">
+            <div class="form-inline">
+              <div class="form-field">
+                <label>Usuario</label>
+                <select id="selectUsuario"><option value="">Selecciona usuario...</option></select>
+              </div>
+              <div class="form-field">
+                <label>Workspace</label>
+                <select id="selectWorkspace"><option value="">Selecciona workspace...</option></select>
+              </div>
+              <div class="form-field">
+                <label>Rol</label>
+                <select id="selectRol">
+                  <option value="AGENT">AGENT</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="asignarUsuario()">Asignar</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h3>Todos los usuarios</h3></div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Nombre</th><th>Email</th><th>Workspaces</th><th>Estado</th><th>Registrado</th><th>Acciones</th></tr>
+                </thead>
+                <tbody id="tbodyUsuarios">
+                  <tr><td colspan="5"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ADDONS ── -->
+      <div class="section" id="sec-addons">
+        <div class="panel" style="margin-bottom:20px">
+          <div class="panel-header"><h3>Crear nuevo add-on</h3></div>
+          <div class="panel-body">
+            <div class="form-inline">
+              <div class="form-field">
+                <label>Código</label>
+                <input type="text" id="addonCode" placeholder="Ej: AI_ASSIST">
+              </div>
+              <div class="form-field">
+                <label>Nombre</label>
+                <input type="text" id="addonName" placeholder="Nombre del addon">
+              </div>
+              <div class="form-field">
+                <label>Descripción</label>
+                <input type="text" id="addonDesc" placeholder="Descripción breve">
+              </div>
+              <button class="btn btn-primary" onclick="crearAddon()">Crear</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Catálogo global</h3>
+            <span style="font-size:0.75rem;color:var(--text-muted)">Controla la disponibilidad global — si desactivas aquí ningún workspace puede usarlo</span>
+          </div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Disponible globalmente</th></tr>
+                </thead>
+                <tbody id="tbodyAddons">
+                  <tr><td colspan="4"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── OWNERS ── -->
+      <div class="section" id="sec-owners">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Cuentas de Owner</h3>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalCrearOwner()">+ Nuevo owner</button>
+          </div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Nombre</th><th>Email</th><th>Estado</th><th>Creado</th></tr>
+                </thead>
+                <tbody id="tbodyOwners">
+                  <tr><td colspan="5"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Crear / Editar Workspace ══ -->
+  <div class="modal-overlay" id="modalWorkspace">
+    <div class="modal">
+      <h3 id="modalWsTitle">Nuevo workspace</h3>
+      <p class="modal-sub">Completa los datos del workspace</p>
+      <input type="hidden" id="wsEditId">
+      <div class="form-group">
+        <label>Workspace Key *</label>
+        <input type="text" id="wsKey" placeholder="Ej: WS-TIENDA-001">
+      </div>
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input type="text" id="wsName" placeholder="Nombre del negocio">
+      </div>
+      <div class="form-group">
+        <label>Dominio</label>
+        <input type="text" id="wsDomain" placeholder="Ej: tienda-lopez.com">
+      </div>
+      <div class="form-group" id="wsStatusGroup" style="display:none">
+        <label>Estado</label>
+        <select id="wsStatus">
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="SUSPENDED">SUSPENDED</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="cerrarModal('modalWorkspace')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarWorkspace()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Add-ons por workspace ══ -->
+  <div class="modal-overlay" id="modalAddonsWs">
+    <div class="modal" style="max-width:500px">
+      <h3 id="modalAddonsWsTitle">Add-ons del workspace</h3>
+      <p class="modal-sub">Activa o desactiva add-ons para este workspace específico</p>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                  padding:12px;margin-bottom:16px;font-size:0.78rem;color:var(--text-muted);line-height:1.7">
+        🔵 <strong style="color:var(--text)">Activo</strong> — este workspace puede usar el add-on<br>
+        ⚫ <strong style="color:var(--text)">Inactivo</strong> — deshabilitado solo para este workspace<br>
+        🔒 <strong style="color:var(--text)">Bloqueado</strong> — el owner lo desactivó globalmente
+      </div>
+
+      <div id="addonWsList" style="display:flex;flex-direction:column;gap:10px;max-height:340px;overflow-y:auto">
+        <p style="color:var(--text-muted);font-size:0.82rem">Cargando...</p>
+      </div>
+
+      <div class="modal-actions" style="margin-top:20px">
+        <button class="btn btn-ghost" onclick="cerrarModal('modalAddonsWs')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Detalle y edición de usuario ══ -->
+  <div class="modal-overlay" id="modalUsuario">
+    <div class="modal" style="max-width:520px">
+      <h3 id="modalUsuarioTitle">Detalle del usuario</h3>
+      <p class="modal-sub">Gestiona los workspaces asignados a este usuario</p>
+      <input type="hidden" id="uEditId">
+
+      <!-- Info solo lectura -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+          <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Nombre</div>
+          <div id="uInfoNombre" style="color:#fff;font-weight:500;font-size:0.88rem">—</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+          <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Email</div>
+          <div id="uInfoEmail" style="color:var(--text-muted);font-size:0.82rem;word-break:break-all">—</div>
+        </div>
+      </div>
+
+      <!-- Workspaces asignados -->
+      <div style="margin-bottom:16px">
+        <label style="font-size:0.78rem;color:var(--text-muted);font-weight:500;display:block;margin-bottom:8px">WORKSPACES ASIGNADOS</label>
+        <div id="uWorkspacesList" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto"></div>
+      </div>
+
+      <!-- Asignar nuevo workspace -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
+        <label style="font-size:0.78rem;color:var(--text-muted);font-weight:500;display:block;margin-bottom:10px">ASIGNAR A OTRO WORKSPACE</label>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div style="flex:1">
+            <select id="uSelectWs" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:0.82rem">
+              <option value="">Selecciona workspace...</option>
+            </select>
+          </div>
+          <div>
+            <select id="uSelectRol" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:0.82rem">
+              <option value="AGENT">AGENT</option>
+              <option value="ADMIN">ADMIN</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="asignarWsUsuario()">Asignar</button>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="cerrarModal('modalUsuario')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Confirmación de eliminación ══ -->
+  <div class="modal-overlay" id="modalConfirm">
+    <div class="modal" style="max-width:420px;text-align:center">
+      <div id="confirmIcon" style="font-size:2.5rem;margin-bottom:12px">⚠️</div>
+      <h3 id="confirmTitle" style="margin-bottom:8px">¿Estás seguro?</h3>
+      <p id="confirmMsg" style="color:var(--text-muted);font-size:0.85rem;line-height:1.6;margin-bottom:8px"></p>
+      <p id="confirmWarning" style="color:#ef4444;font-size:0.78rem;margin-bottom:20px">Esta acción no se puede deshacer.</p>
+      <div class="modal-actions" style="justify-content:center;gap:12px">
+        <button class="btn btn-ghost" onclick="cerrarModal('modalConfirm')" style="min-width:110px">Cancelar</button>
+        <button id="confirmBtn" class="btn" style="min-width:110px;background:#ef4444;color:#fff;border:none">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Crear Owner ══ -->
+  <div class="modal-overlay" id="modalCrearOwner">
+    <div class="modal" style="max-width:440px">
+      <h3>Nuevo Owner</h3>
+      <p class="modal-sub">El nuevo owner podrá ingresar de inmediato con estas credenciales</p>
+      <div class="form-group">
+        <label>Nombre completo</label>
+        <input type="text" id="newOwnerNombre" placeholder="Ej: Laura Crudzaso">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="newOwnerEmail" placeholder="correo@ejemplo.com">
+      </div>
+      <div class="form-group">
+        <label>Contraseña <span style="color:var(--text-muted);font-size:0.78rem">(mín. 8 caracteres)</span></label>
+        <input type="password" id="newOwnerPassword" placeholder="Contraseña de acceso">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="cerrarModal('modalCrearOwner')">Cancelar</button>
+        <button class="btn btn-primary" onclick="crearOwner()">Crear owner</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user  = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!token || user.role !== 'OWNER') window.location.href = '/owner/login';
+
+    document.getElementById('sidebarName').textContent  = user.full_name || '—';
+    document.getElementById('sidebarEmail').textContent = user.email     || '—';
+
+    const api = async (url, options = {}) => {
+      const res = await fetch(url, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...(options.headers || {}) }
+      });
+      return res.json();
+    };
+
+    const toast = document.getElementById('toast');
+    let toastTimer;
+    const showToast = (msg, type = 'success') => {
+      clearTimeout(toastTimer);
+      toast.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;
+      toast.className   = `toast ${type} visible`;
+      toastTimer = setTimeout(() => toast.className = 'toast', 3000);
+    };
+
+    const titles = { dashboard: 'Dashboard', workspaces: 'Workspaces', usuarios: 'Usuarios', addons: 'Add-ons' };
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const sec = item.dataset.section;
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        item.classList.add('active');
+        document.getElementById(`sec-${sec}`).classList.add('active');
+        document.getElementById('topbarTitle').textContent = titles[sec];
+        if (sec === 'dashboard')  cargarDashboard();
+        if (sec === 'workspaces') cargarWorkspaces();
+        if (sec === 'usuarios')   cargarUsuarios();
+        if (sec === 'addons')     cargarAddons();
+        if (sec === 'owners')     cargarOwners();
+      });
+    });
+
+    const logout = () => { localStorage.clear(); window.location.href = '/owner/login'; };
+
+    // ── Dashboard ─────────────────────────────────────────────
+    const cargarDashboard = async () => {
+      const data = await api('/api/owner/dashboard');
+      if (!data.ok) return;
+      document.getElementById('statWS').textContent     = data.data.total_workspaces;
+      document.getElementById('statActive').textContent = data.data.ws_activos;
+      document.getElementById('statUsers').textContent  = data.data.total_usuarios;
+      document.getElementById('statAddons').textContent = data.data.total_addons;
+    };
+
+    // ── Workspaces ────────────────────────────────────────────
+    const cargarWorkspaces = async () => {
+      const data  = await api('/api/owner/workspaces');
+      const tbody = document.getElementById('tbodyWorkspaces');
+      if (!data.ok || !data.data.length) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">🏢</div><p>No hay workspaces aún.</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = data.data.map(ws => `
+        <tr>
+          <td style="color:#fff;font-weight:500">${ws.name}</td>
+          <td><code style="font-family:var(--font-mono);font-size:0.75rem;color:var(--accent)">${ws.workspace_key}</code></td>
+          <td>${ws.domain || '—'}</td>
+          <td>${ws.total_miembros}</td>
+          <td><span class="badge-status ${ws.status === 'ACTIVE' ? 'badge-active' : 'badge-suspended'}">${ws.status}</span></td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm"
+                onclick="editarWorkspace(${ws.id},'${ws.workspace_key}','${ws.name}','${ws.domain || ''}','${ws.status}')">
+                Editar
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="toggleWs(${ws.id})">
+                ${ws.status === 'ACTIVE' ? 'Suspender' : 'Activar'}
+              </button>
+              <button class="btn btn-ghost btn-sm"
+                style="color:var(--accent);border-color:rgba(59,130,246,0.3)"
+                onclick="abrirAddonsWorkspace(${ws.id}, '${ws.name}')">
+                🧩 Add-ons
+              </button>
+              <button class="btn btn-sm"
+                style="color:#ef4444;border:1px solid rgba(239,68,68,0.3);background:transparent;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.75rem"
+                onclick="eliminarWorkspace(${ws.id}, '${ws.name}')">
+                Eliminar
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    };
+
+    const abrirModalWorkspace = () => {
+      document.getElementById('wsEditId').value = '';
+      document.getElementById('wsKey').value    = '';
+      document.getElementById('wsName').value   = '';
+      document.getElementById('wsDomain').value = '';
+      document.getElementById('wsKey').disabled = false;
+      document.getElementById('wsStatusGroup').style.display = 'none';
+      document.getElementById('modalWsTitle').textContent = 'Nuevo workspace';
+      document.getElementById('modalWorkspace').classList.add('visible');
+    };
+
+    const editarWorkspace = (id, key, name, domain, status) => {
+      document.getElementById('wsEditId').value = id;
+      document.getElementById('wsKey').value    = key;
+      document.getElementById('wsName').value   = name;
+      document.getElementById('wsDomain').value = domain;
+      document.getElementById('wsStatus').value = status;
+      document.getElementById('wsKey').disabled = true;
+      document.getElementById('wsStatusGroup').style.display = 'block';
+      document.getElementById('modalWsTitle').textContent = 'Editar workspace';
+      document.getElementById('modalWorkspace').classList.add('visible');
+    };
+
+    const guardarWorkspace = async () => {
+      const id     = document.getElementById('wsEditId').value;
+      const key    = document.getElementById('wsKey').value.trim();
+      const name   = document.getElementById('wsName').value.trim();
+      const domain = document.getElementById('wsDomain').value.trim();
+      const status = document.getElementById('wsStatus').value;
+      if (!name) return showToast('El nombre es requerido', 'error');
+      const data = id
+        ? await api(`/api/owner/workspaces/${id}`, { method: 'PUT', body: JSON.stringify({ name, domain, status }) })
+        : await api('/api/owner/workspaces', { method: 'POST', body: JSON.stringify({ workspace_key: key, name, domain }) });
+      if (data.ok) { showToast(data.message); cerrarModal('modalWorkspace'); cargarWorkspaces(); }
+      else showToast(data.message, 'error');
+    };
+
+    const toggleWs = async (id) => {
+      const data = await api(`/api/owner/workspaces/${id}/toggle`, { method: 'PATCH' });
+      if (data.ok) { showToast(data.message); cargarWorkspaces(); }
+      else showToast(data.message, 'error');
+    };
+
+    // ── Add-ons por workspace ─────────────────────────────────
+    const abrirAddonsWorkspace = async (workspaceId, workspaceName) => {
+      document.getElementById('modalAddonsWsTitle').textContent = `Add-ons — ${workspaceName}`;
+      document.getElementById('addonWsList').innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem">Cargando...</p>';
+      document.getElementById('modalAddonsWs').classList.add('visible');
+      await refrescarAddonsWorkspace(workspaceId);
+    };
+
+    const refrescarAddonsWorkspace = async (workspaceId) => {
+      const data = await api(`/api/owner/workspaces/${workspaceId}/addons`);
+      const list = document.getElementById('addonWsList');
+
+      if (!data.ok || !data.data.length) {
+        list.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem">No hay add-ons en el catálogo. Créalos primero en la sección Add-ons.</p>';
+        return;
+      }
+
+      list.innerHTML = data.data.map(a => {
+        const activo = a.is_active === 1 || a.is_active === true;
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;
+                      background:var(--surface2);border:1px solid var(--border);
+                      border-radius:10px;padding:14px 16px">
+            <div style="flex:1">
+              <div style="font-weight:500;color:#fff;font-size:0.88rem">${a.name}</div>
+              <code style="font-size:0.7rem;color:var(--accent)">${a.code}</code>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:3px">${a.description || '—'}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;margin-left:16px">
+              <label class="toggle">
+                <input type="checkbox" ${activo ? 'checked' : ''}
+                  onchange="toggleAddonWorkspace(${a.id}, ${workspaceId})">
+                <span class="toggle-slider"></span>
+              </label>
+              <span style="font-size:0.65rem;color:var(--text-muted)">${activo ? 'Activo' : 'Inactivo'}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
+    const toggleAddonWorkspace = async (addonId, workspaceId) => {
+      const data = await api('/api/owner/addons/activar', {
+        method: 'POST',
+        body: JSON.stringify({ workspace_id: workspaceId, addon_id: addonId })
+      });
+      if (data.ok) { showToast(data.message); refrescarAddonsWorkspace(workspaceId); }
+      else { showToast(data.message, 'error'); refrescarAddonsWorkspace(workspaceId); }
+    };
+
+    // ── Usuarios ──────────────────────────────────────────────
+    const cargarUsuarios = async () => {
+      const [dataUsers, dataWs] = await Promise.all([api('/api/owner/usuarios'), api('/api/owner/workspaces')]);
+      if (dataUsers.ok) {
+        document.getElementById('selectUsuario').innerHTML =
+          '<option value="">Selecciona usuario...</option>' +
+          dataUsers.data.map(u => `<option value="${u.id}">${u.full_name} (${u.email})</option>`).join('');
+      }
+      if (dataWs.ok) {
+        document.getElementById('selectWorkspace').innerHTML =
+          '<option value="">Selecciona workspace...</option>' +
+          dataWs.data.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+      }
+      const tbody = document.getElementById('tbodyUsuarios');
+      if (!dataUsers.ok || !dataUsers.data.length) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">👥</div><p>No hay usuarios.</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = dataUsers.data.map(u => `
+        <tr>
+          <td style="color:#fff;font-weight:500">${u.full_name}</td>
+          <td>${u.email}</td>
+          <td>${u.total_workspaces} workspace${u.total_workspaces !== 1 ? 's' : ''}</td>
+          <td><span class="badge-status ${u.is_active ? 'badge-active' : 'badge-suspended'}">${u.is_active ? 'ACTIVO' : 'INACTIVO'}</span></td>
+          <td style="color:var(--text-muted);font-size:0.75rem">${new Date(u.created_at).toLocaleDateString('es-CO')}</td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" onclick="abrirUsuario(${u.id}, '${u.full_name}', '${u.email}')">
+                Ver / Editar
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="toggleUsuario(${u.id})">
+                ${u.is_active ? 'Suspender' : 'Activar'}
+              </button>
+              <button class="btn btn-sm"
+                style="color:#ef4444;border:1px solid rgba(239,68,68,0.3);background:transparent;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.75rem"
+                onclick="eliminarUsuario(${u.id}, '${u.full_name}')">
+                Eliminar
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    };
+
+    const asignarUsuario = async () => {
+      const user_id      = document.getElementById('selectUsuario').value;
+      const workspace_id = document.getElementById('selectWorkspace').value;
+      const role         = document.getElementById('selectRol').value;
+      if (!user_id || !workspace_id) return showToast('Selecciona usuario y workspace', 'error');
+      const data = await api('/api/owner/usuarios/asignar', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: parseInt(user_id), workspace_id: parseInt(workspace_id), role })
+      });
+      if (data.ok) { showToast(data.message); cargarUsuarios(); }
+      else showToast(data.message, 'error');
+    };
+
+    // ── Add-ons catálogo global ────────────────────────────────
+    const cargarAddons = async () => {
+      const data  = await api('/api/owner/addons');
+      const tbody = document.getElementById('tbodyAddons');
+      if (!data.ok || !data.data.length) {
+        tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">🧩</div><p>No hay add-ons. Crea el primero.</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = data.data.map(a => `
+        <tr>
+          <td><code style="font-family:var(--font-mono);font-size:0.75rem;color:var(--accent)">${a.code}</code></td>
+          <td style="color:#fff;font-weight:500">${a.name}</td>
+          <td style="color:var(--text-muted)">${a.description || '—'}</td>
+          <td>
+            <label class="toggle">
+              <input type="checkbox" ${a.is_available ? 'checked' : ''} onchange="toggleAddonGlobal(${a.id})">
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+        </tr>
+      `).join('');
+    };
+
+    const crearAddon = async () => {
+      const code = document.getElementById('addonCode').value.trim();
+      const name = document.getElementById('addonName').value.trim();
+      const desc = document.getElementById('addonDesc').value.trim();
+      if (!code || !name) return showToast('Código y nombre son requeridos', 'error');
+      const data = await api('/api/owner/addons', { method: 'POST', body: JSON.stringify({ code, name, description: desc }) });
+      if (data.ok) {
+        showToast(data.message);
+        document.getElementById('addonCode').value = '';
+        document.getElementById('addonName').value = '';
+        document.getElementById('addonDesc').value = '';
+        cargarAddons();
+      } else showToast(data.message, 'error');
+    };
+
+    const toggleAddonGlobal = async (id) => {
+      const data = await api(`/api/owner/addons/${id}/toggle`, { method: 'PATCH' });
+      if (data.ok) showToast(data.message);
+      else { showToast(data.message, 'error'); cargarAddons(); }
+    };
+
+    // ── Detalle / Edición de usuario ──────────────────────────
+    let _usuarioActualId = null;
+
+    const abrirUsuario = async (id, nombre, email) => {
+      _usuarioActualId = id;
+      document.getElementById('uEditId').value          = id;
+      document.getElementById('uInfoNombre').textContent = nombre;
+      document.getElementById('uInfoEmail').textContent  = email;
+      document.getElementById('modalUsuarioTitle').textContent = `Usuario — ${nombre}`;
+      document.getElementById('uWorkspacesList').innerHTML =
+        '<p style="color:var(--text-muted);font-size:0.82rem">Cargando...</p>';
+      document.getElementById('modalUsuario').classList.add('visible');
+      await refrescarWsUsuario(id);
+    };
+
+    const refrescarWsUsuario = async (userId) => {
+      const [dataWs] = await Promise.all([api('/api/owner/workspaces')]);
+      const todosWs  = dataWs.data || [];
+
+      // Carga membresías de cada workspace para este usuario
+      const checks = await Promise.all(
+        todosWs.map(ws =>
+          api(`/api/owner/workspaces/${ws.id}/miembros`)
+            .then(r => ({ ws, miembro: (r.data || []).find(m => m.user_id === userId) }))
+        )
+      );
+      const asignados = checks.filter(x => x.miembro);
+      const libres    = todosWs.filter(ws => !asignados.find(a => a.ws.id === ws.id) && ws.status === 'ACTIVE');
+
+      // Poblar dropdown de workspaces disponibles
+      document.getElementById('uSelectWs').innerHTML =
+        '<option value="">Selecciona workspace...</option>' +
+        libres.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+
+      // Renderizar lista de workspaces asignados
+      const lista = document.getElementById('uWorkspacesList');
+      if (!asignados.length) {
+        lista.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem">Sin workspaces asignados.</p>';
+        return;
+      }
+      lista.innerHTML = asignados.map(({ ws, miembro }) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    background:var(--surface2);border:1px solid var(--border);
+                    border-radius:8px;padding:10px 14px">
+          <div>
+            <div style="font-weight:500;color:#fff;font-size:0.85rem">${ws.name}</div>
+            <code style="font-size:0.7rem;color:var(--accent)">${ws.workspace_key}</code>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge-status ${miembro.role === 'ADMIN' ? 'badge-admin' : 'badge-agent'}">${miembro.role}</span>
+            <button onclick="quitarWsUsuario(${miembro.id}, '${ws.name}')"
+              style="background:transparent;border:1px solid rgba(239,68,68,0.4);color:#ef4444;
+                     padding:3px 10px;border-radius:6px;cursor:pointer;font-size:0.72rem">
+              Quitar
+            </button>
+          </div>
+        </div>
+      `).join('');
+    };
+
+    const asignarWsUsuario = async () => {
+      const userId = _usuarioActualId;
+      const wsId   = document.getElementById('uSelectWs').value;
+      const role   = document.getElementById('uSelectRol').value;
+      if (!wsId) return showToast('Selecciona un workspace', 'error');
+      const data = await api('/api/owner/usuarios/asignar', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId, workspace_id: parseInt(wsId), role })
+      });
+      if (data.ok) { showToast(data.message); refrescarWsUsuario(userId); }
+      else showToast(data.message, 'error');
+    };
+
+    const quitarWsUsuario = (miembroId, wsNombre) => {
+      confirmar(
+        'Quitar del workspace',
+        `¿Quitar a este usuario del workspace "${wsNombre}"?`,
+        'El usuario perderá acceso a ese workspace pero seguirá existiendo en el sistema.',
+        async () => {
+          const data = await api(`/api/owner/workspace-members/${miembroId}`, { method: 'DELETE' });
+          if (data.ok) { showToast(data.message); refrescarWsUsuario(_usuarioActualId); }
+          else showToast(data.message, 'error');
+        }
+      );
+    };
+
+    // ── Confirmación personalizada ────────────────────────────
+    const confirmar = (titulo, mensaje, advertencia, onConfirm) => {
+      document.getElementById('confirmTitle').textContent   = titulo;
+      document.getElementById('confirmMsg').textContent     = mensaje;
+      document.getElementById('confirmWarning').textContent = advertencia || 'Esta acción no se puede deshacer.';
+      const btn = document.getElementById('confirmBtn');
+      btn.onclick = () => { cerrarModal('modalConfirm'); onConfirm(); };
+      document.getElementById('modalConfirm').classList.add('visible');
+    };
+
+    // ── Acciones usuarios ─────────────────────────────────────
+    const toggleUsuario = async (id) => {
+      const data = await api(`/api/owner/usuarios/${id}/toggle`, { method: 'PATCH' });
+      if (data.ok) { showToast(data.message); cargarUsuarios(); }
+      else showToast(data.message, 'error');
+    };
+
+    const eliminarUsuario = (id, nombre) => {
+      confirmar(
+        'Eliminar usuario',
+        `Estás a punto de eliminar permanentemente al usuario "${nombre}". Se removerá de todos los workspaces a los que pertenece.`,
+        'Esta acción no se puede deshacer.',
+        async () => {
+          const data = await api(`/api/owner/usuarios/${id}`, { method: 'DELETE' });
+          if (data.ok) { showToast(data.message); cargarUsuarios(); }
+          else showToast(data.message, 'error');
+        }
+      );
+    };
+
+    // ── Acciones workspaces ───────────────────────────────────
+    const eliminarWorkspace = (id, nombre) => {
+      confirmar(
+        'Eliminar workspace',
+        `Estás a punto de eliminar el workspace "${nombre}" junto con todos sus miembros, invitaciones y configuraciones de add-ons.`,
+        'Los tickets históricos se conservarán. Esta acción no se puede deshacer.',
+        async () => {
+          const data = await api(`/api/owner/workspaces/${id}`, { method: 'DELETE' });
+          if (data.ok) { showToast(data.message); cargarWorkspaces(); cargarDashboard(); }
+          else showToast(data.message, 'error');
+        }
+      );
+    };
+
+    // ── Modales ───────────────────────────────────────────────
+    const cerrarModal = (id) => document.getElementById(id).classList.remove('visible');
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('visible'); });
+    });
+
+    // ══════════════════════════════════════════════════════════
+    //  OWNERS
+    // ══════════════════════════════════════════════════════════
+    const cargarOwners = async () => {
+      const tbody = document.getElementById('tbodyOwners');
+      try {
+        const data = await api('/api/owner/owners');
+        if (!data.ok) {
+          tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">⚠️</div><p>${data.message || 'Error al cargar owners'}</p></div></td></tr>`;
+          return;
+        }
+        const lista = data.data || [];
+        if (!lista.length) {
+          tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">🔑</div><p>No hay owners registrados.</p></div></td></tr>`;
+          return;
+        }
+        tbody.innerHTML = lista.map(o => {
+          const activo = o.is_active == 1;
+          const esTu   = o.id === user.id;
+          return `
+          <tr style="${activo ? '' : 'opacity:0.55'}">
+            <td style="color:#fff;font-weight:500">${o.full_name}${esTu ? ' <span style="font-size:0.68rem;color:var(--accent)">(tú)</span>' : ''}</td>
+            <td style="color:var(--text-muted)">${o.email}</td>
+            <td><span class="badge-status ${activo ? 'badge-active' : 'badge-suspended'}">${activo ? 'Activo' : 'Suspendido'}</span></td>
+            <td style="color:var(--text-muted);font-size:0.75rem">${new Date(o.created_at).toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'})}</td>
+
+          </tr>`;
+        }).join('');
+      } catch (e) {
+        console.error('cargarOwners:', e);
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">⚠️</div><p>${e.message}</p></div></td></tr>`;
+      }
+    };
+
+    const abrirModalCrearOwner = () => {
+      document.getElementById('newOwnerNombre').value    = '';
+      document.getElementById('newOwnerEmail').value     = '';
+      document.getElementById('newOwnerPassword').value  = '';
+      document.getElementById('modalCrearOwner').classList.add('visible');
+    };
+
+    const crearOwner = async () => {
+      const nombre   = document.getElementById('newOwnerNombre').value.trim();
+      const email    = document.getElementById('newOwnerEmail').value.trim();
+      const password = document.getElementById('newOwnerPassword').value;
+      if (!nombre || !email || !password) return showToast('Completa todos los campos', 'error');
+      if (password.length < 8) return showToast('La contraseña debe tener al menos 8 caracteres', 'error');
+      const data = await api('/api/owner/owners', {
+        method: 'POST',
+        body: JSON.stringify({ full_name: nombre, email, password })
+      });
+      if (data.ok) {
+        showToast(data.message);
+        cerrarModal('modalCrearOwner');
+        cargarOwners();
+      } else showToast(data.message, 'error');
+    };
+
+    const toggleOwner = (id) => {
+      confirmar(
+        'Cambiar estado del owner',
+        '¿Estás seguro de cambiar el estado de acceso de este owner?',
+        'Un owner suspendido no puede iniciar sesión.',
+        async () => {
+          const data = await api(`/api/owner/owners/${id}/toggle`, { method: 'PATCH' });
+          if (data.ok) { showToast(data.message); cargarOwners(); }
+          else showToast(data.message, 'error');
+        }
+      );
+    };
+
+
+    cargarDashboard();
+  </script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Workspace · SupCrud</title>
+  <link rel="stylesheet" href="../assets/css/auth.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+
+    <div class="auth-brand">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">Sup<span>Crud</span></div>
+      </div>
+      <div class="tagline">by Crudzaso · Panel de Workspace</div>
+    </div>
+
+    <!-- ── Paso 1: Formulario de login ── -->
+    <div class="auth-card" id="loginForm">
+      <div class="role-badge"><span class="dot"></span> Admin / Agent</div>
+      <h2>Iniciar sesión</h2>
+      <p class="subtitle">Accede con tu cuenta de agente o administrador</p>
+
+      <div class="form-group">
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" placeholder="tu@email.com" autocomplete="email">
+        <div class="field-error" id="emailError">Ingresa un email válido</div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+        <div class="field-error" id="passwordError">La contraseña es requerida</div>
+      </div>
+
+      <button class="btn-primary" id="btnLogin">
+        <span class="btn-text">Ingresar</span>
+        <div class="spinner"></div>
+      </button>
+
+      <div class="alert" id="alertLogin"></div>
+    </div>
+
+    <!-- ── Paso 2: Selector de workspace (si tiene varios) ── -->
+    <div class="auth-card workspace-selector" id="workspaceSelector">
+      <h2>Selecciona tu workspace</h2>
+      <p class="subtitle">Tu cuenta tiene acceso a múltiples workspaces</p>
+
+      <div class="workspace-list" id="workspaceList">
+        <!-- Se llena dinámicamente con JavaScript -->
+      </div>
+
+      <button class="btn-primary" id="btnBack" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);margin-top:4px">
+        <span class="btn-text">← Volver</span>
+        <div class="spinner"></div>
+      </button>
+
+      <div class="alert" id="alertSelector"></div>
+    </div>
+
+    <div class="auth-footer">
+      ¿No tienes cuenta? <a href="/workspace/register">Registrarse</a>
+      &nbsp;·&nbsp;
+      <a href="/">← Volver</a>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Estado temporal guardado entre el paso 1 y el paso 2 ──
+    // Cuando el login devuelve múltiples workspaces, guardamos
+    // el email y password para reutilizarlos en el paso 2
+    let tempCredentials = null;
+
+    const emailInput    = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const btnLogin      = document.getElementById('btnLogin');
+    const btnBack       = document.getElementById('btnBack');
+    const loginForm     = document.getElementById('loginForm');
+    const wsSelector    = document.getElementById('workspaceSelector');
+    const wsList        = document.getElementById('workspaceList');
+    const alertLogin    = document.getElementById('alertLogin');
+    const alertSelector = document.getElementById('alertSelector');
+
+    const showAlert = (el, message, type) => {
+      el.textContent = (type === 'success' ? '✓ ' : '✕ ') + message;
+      el.className   = `alert ${type} visible`;
+    };
+
+    const setLoading = (btn, loading) => {
+      btn.disabled = loading;
+      btn.classList.toggle('loading', loading);
+    };
+
+    const validate = () => {
+      let valid = true;
+      document.querySelectorAll('.field-error').forEach(e => e.classList.remove('visible'));
+      document.querySelectorAll('input').forEach(i => i.classList.remove('error'));
+
+      if (!emailInput.value.includes('@')) {
+        document.getElementById('emailError').classList.add('visible');
+        emailInput.classList.add('error');
+        valid = false;
+      }
+      if (!passwordInput.value.trim()) {
+        document.getElementById('passwordError').classList.add('visible');
+        passwordInput.classList.add('error');
+        valid = false;
+      }
+      return valid;
+    };
+
+    // ── Guarda sesión y redirige al dashboard ─────────────────
+    const guardarSesionYRedirigir = (data) => {
+      localStorage.setItem('token',         data.token);
+      localStorage.setItem('user',          JSON.stringify(data.user));
+      localStorage.setItem('role',          data.user.role);
+      localStorage.setItem('workspaceId',   data.user.workspaceId);
+      localStorage.setItem('workspaceName', data.user.workspaceName);
+
+      showAlert(alertLogin, 'Ingreso exitoso. Redirigiendo...', 'success');
+      setTimeout(() => window.location.href = '/workspace/dashboard', 1000);
+    };
+
+    // ── Paso 1: Login inicial ─────────────────────────────────
+    const handleLogin = async () => {
+      if (!validate()) return;
+      setLoading(btnLogin, true);
+      alertLogin.className = 'alert';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            email:    emailInput.value.trim().toLowerCase(),
+            password: passwordInput.value
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.ok) {
+          showAlert(alertLogin, data.message, 'error');
+          return;
+        }
+
+        // El usuario pertenece a VARIOS workspaces → mostrar selector
+        if (data.requiresWorkspaceSelection) {
+          tempCredentials = {
+            email:    emailInput.value.trim().toLowerCase(),
+            password: passwordInput.value
+          };
+          mostrarSelectorWorkspace(data.data.workspaces);
+          return;
+        }
+
+        // Usuario con un solo workspace → login directo
+        guardarSesionYRedirigir(data.data);
+
+      } catch (e) {
+        showAlert(alertLogin, 'No se pudo conectar con el servidor', 'error');
+      } finally {
+        setLoading(btnLogin, false);
+      }
+    };
+
+    // ── Paso 2: Mostrar selector de workspace ─────────────────
+    const mostrarSelectorWorkspace = (workspaces) => {
+      loginForm.style.display = 'none';
+      wsSelector.classList.add('visible');
+
+      // Genera un botón por cada workspace disponible
+      wsList.innerHTML = workspaces.map(ws => `
+        <div class="workspace-item" onclick="seleccionarWorkspace(${ws.workspaceId})">
+          <div>
+            <div class="ws-name">🏢 ${ws.workspaceName}</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">${ws.workspaceKey}</div>
+          </div>
+          <div class="ws-role">${ws.role}</div>
+        </div>
+      `).join('');
+    };
+
+    // ── Paso 2: El usuario eligió un workspace ────────────────
+    const seleccionarWorkspace = async (workspaceId) => {
+      alertSelector.className = 'alert';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ ...tempCredentials, workspaceId })
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+          guardarSesionYRedirigir(data.data);
+        } else {
+          showAlert(alertSelector, data.message, 'error');
+        }
+      } catch (e) {
+        showAlert(alertSelector, 'Error al seleccionar workspace', 'error');
+      }
+    };
+
+    // ── Volver al formulario de login ─────────────────────────
+    btnBack.addEventListener('click', () => {
+      wsSelector.classList.remove('visible');
+      loginForm.style.display = 'block';
+      tempCredentials = null;
+    });
+
+    // ── Eventos ───────────────────────────────────────────────
+    btnLogin.addEventListener('click', handleLogin);
+    [emailInput, passwordInput].forEach(input =>
+      input.addEventListener('keydown', e => e.key === 'Enter' && handleLogin())
+    );
+
+    // Si ya hay sesión activa, redirige directo
+    if (localStorage.getItem('token') && localStorage.getItem('role') !== 'OWNER') {
+      window.location.href = '/workspace/dashboard';
+    }
+
+    // Hace accesible la función desde el HTML generado dinámicamente
+    window.seleccionarWorkspace = seleccionarWorkspace;
+  </script>
+</body>
+</html>

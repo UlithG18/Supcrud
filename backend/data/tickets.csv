@@ -1,0 +1,5 @@
+workspaceKey,workspaceId,subject,description,type,userEmail,priority,category
+WS-TIENDA-001,1,No llegó mi pedido #4521,Hice el pedido hace 10 días y no ha llegado,R,cliente1@email.com,HIGH,envíos
+WS-TIENDA-001,1,Solicito copia de factura,Necesito la factura del pedido #3300 para mi empresa,P,cliente2@email.com,LOW,facturación
+WS-CLINICA-002,2,Cita cancelada sin aviso,Cancelaron mi cita sin notificarme,Q,paciente1@email.com,MEDIUM,citas
+WS-CLINICA-002,2,Propuesta horario nocturno,Sería útil tener atención en las noches,S,paciente2@email.com,LOW,sugerencias

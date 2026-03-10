@@ -1,0 +1,352 @@
+/* widget.css
+   Estilos del widget embebible SupCrud.
+   Todos los selectores tienen prefijo .sc- para evitar
+   conflictos con los estilos de la web del cliente.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
+
+/* ── Variables ──────────────────────────────────────────────── */
+.sc-widget-root {
+  --sc-bg:         #0a0b0e;
+  --sc-surface:    #111318;
+  --sc-surface2:   #181b22;
+  --sc-border:     #232730;
+  --sc-accent:     #3b82f6;
+  --sc-accent-h:   #2563eb;
+  --sc-accent-glow:rgba(59,130,246,0.12);
+  --sc-success:    #10b981;
+  --sc-error:      #ef4444;
+  --sc-text:       #e2e8f0;
+  --sc-text-muted: #64748b;
+  --sc-text-dim:   #94a3b8;
+  --sc-font:       'DM Sans', sans-serif;
+  --sc-radius:     12px;
+  --sc-shadow:     0 8px 40px rgba(0,0,0,0.5);
+}
+
+/* ── Botón flotante ─────────────────────────────────────────── */
+.sc-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  background: var(--sc-accent);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  z-index: 999998;
+  font-size: 1.4rem;
+}
+.sc-fab:hover {
+  background: var(--sc-accent-h);
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(59,130,246,0.5);
+}
+.sc-fab.sc-open { transform: rotate(45deg) scale(1.05); }
+
+/* Tooltip del botón */
+.sc-fab-tooltip {
+  position: fixed;
+  bottom: 32px;
+  right: 90px;
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-family: var(--sc-font);
+  font-size: 0.8rem;
+  color: var(--sc-text);
+  white-space: nowrap;
+  box-shadow: var(--sc-shadow);
+  z-index: 999997;
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+.sc-fab-tooltip.sc-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ── Panel del widget ───────────────────────────────────────── */
+.sc-panel {
+  position: fixed;
+  bottom: 92px;
+  right: 24px;
+  width: 380px;
+  max-height: 600px;
+  background: var(--sc-surface);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  box-shadow: var(--sc-shadow);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(20px) scale(0.95);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1),
+              opacity 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+.sc-panel.sc-open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.sc-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--sc-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sc-header-icon {
+  width: 32px; height: 32px;
+  background: var(--sc-accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.sc-header-text { flex: 1; }
+.sc-header-title {
+  font-family: var(--sc-font);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+.sc-header-sub {
+  font-family: var(--sc-font);
+  font-size: 0.72rem;
+  color: var(--sc-text-muted);
+  margin: 0;
+}
+
+/* ── Tabs ───────────────────────────────────────────────────── */
+.sc-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--sc-border);
+}
+.sc-tab {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  font-family: var(--sc-font);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--sc-text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-bottom 0.15s;
+  border-bottom: 2px solid transparent;
+}
+.sc-tab:hover { color: var(--sc-text); }
+.sc-tab.sc-active {
+  color: var(--sc-accent);
+  border-bottom-color: var(--sc-accent);
+}
+
+/* ── Body scrollable ────────────────────────────────────────── */
+.sc-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+.sc-body::-webkit-scrollbar { width: 4px; }
+.sc-body::-webkit-scrollbar-track { background: transparent; }
+.sc-body::-webkit-scrollbar-thumb { background: var(--sc-border); border-radius: 4px; }
+
+/* ── Formulario ─────────────────────────────────────────────── */
+.sc-form-group { margin-bottom: 14px; }
+.sc-label {
+  display: block;
+  font-family: var(--sc-font);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--sc-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+.sc-input,
+.sc-select,
+.sc-textarea {
+  width: 100%;
+  background: var(--sc-surface2);
+  border: 1px solid var(--sc-border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--sc-text);
+  font-family: var(--sc-font);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+.sc-input::placeholder,
+.sc-textarea::placeholder { color: var(--sc-text-muted); }
+.sc-input:focus,
+.sc-select:focus,
+.sc-textarea:focus {
+  border-color: var(--sc-accent);
+  box-shadow: 0 0 0 3px var(--sc-accent-glow);
+}
+.sc-input.sc-error { border-color: var(--sc-error); }
+.sc-select { appearance: none; cursor: pointer; }
+.sc-select option { background: var(--sc-surface2); }
+.sc-textarea { resize: vertical; min-height: 80px; }
+
+.sc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── Botón ──────────────────────────────────────────────────── */
+.sc-btn {
+  width: 100%;
+  background: var(--sc-accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 11px;
+  font-family: var(--sc-font);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background 0.15s, transform 0.1s;
+  position: relative;
+}
+.sc-btn:hover { background: var(--sc-accent-h); }
+.sc-btn:active { transform: scale(0.99); }
+.sc-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.sc-btn .sc-spinner {
+  display: none;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: sc-spin 0.7s linear infinite;
+  margin: 0 auto;
+}
+.sc-btn.sc-loading .sc-btn-text { display: none; }
+.sc-btn.sc-loading .sc-spinner  { display: block; }
+@keyframes sc-spin { to { transform: rotate(360deg); } }
+
+/* ── Alert ──────────────────────────────────────────────────── */
+.sc-alert {
+  display: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: var(--sc-font);
+  font-size: 0.8rem;
+  margin-top: 12px;
+  border: 1px solid transparent;
+}
+.sc-alert.sc-visible { display: flex; align-items: center; gap: 8px; }
+.sc-alert.sc-success {
+  background: rgba(16,185,129,0.1);
+  border-color: rgba(16,185,129,0.3);
+  color: var(--sc-success);
+}
+.sc-alert.sc-error {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.3);
+  color: var(--sc-error);
+}
+
+/* ── Success screen ─────────────────────────────────────────── */
+.sc-success-screen {
+  text-align: center;
+  padding: 10px 0;
+}
+.sc-success-icon {
+  font-size: 2.5rem;
+  margin-bottom: 14px;
+  display: block;
+}
+.sc-success-title {
+  font-family: var(--sc-font);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.sc-success-sub {
+  font-family: var(--sc-font);
+  font-size: 0.82rem;
+  color: var(--sc-text-muted);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.sc-ref-code {
+  background: var(--sc-surface2);
+  border: 1px solid var(--sc-border);
+  border-radius: 8px;
+  padding: 14px;
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--sc-accent);
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
+  word-break: break-all;
+}
+.sc-btn-secondary {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--sc-border);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: var(--sc-font);
+  font-size: 0.82rem;
+  color: var(--sc-text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  margin-top: 8px;
+}
+.sc-btn-secondary:hover { border-color: var(--sc-accent); color: var(--sc-accent); }
+
+/* ── Consulta tab ───────────────────────────────────────────── */
+.sc-consulta-info {
+  background: var(--sc-surface2);
+  border: 1px solid var(--sc-border);
+  border-radius: 8px;
+  padding: 14px;
+  font-family: var(--sc-font);
+  font-size: 0.8rem;
+  color: var(--sc-text-muted);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+.sc-consulta-info strong { color: var(--sc-text); }
+
+/* ── Footer del widget ──────────────────────────────────────── */
+.sc-footer {
+  padding: 10px 20px;
+  border-top: 1px solid var(--sc-border);
+  text-align: center;
+  font-family: var(--sc-font);
+  font-size: 0.65rem;
+  color: var(--sc-text-muted);
+}
+.sc-footer a { color: var(--sc-accent); text-decoration: none; }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .sc-panel {
+    width: calc(100vw - 24px);
+    right: 12px;
+    bottom: 80px;
+    max-height: 70vh;
+  }
+  .sc-fab { bottom: 16px; right: 16px; }
+}

@@ -1,0 +1,3 @@
+email,password_hash,full_name,google_sub,avatar_url
+juan.perez@email.com,$2b$12$hashjuan,Juan Pérez,,
+maria.lopez@gmail.com,,María López,google-sub-9988776655,https://foto.com/maria.jpg

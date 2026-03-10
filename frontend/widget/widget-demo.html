@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo Widget · SupCrud</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    /* Simula una tienda online */
+    .nav {
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-brand { font-weight: 700; font-size: 1.1rem; color: #1e293b; }
+    .nav-links { display: flex; gap: 24px; }
+    .nav-links a {
+      color: #64748b; text-decoration: none; font-size: 0.9rem;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: #3b82f6; }
+
+    .hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 80px 40px;
+      text-align: center;
+    }
+    .hero h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 16px; }
+    .hero p  { font-size: 1.1rem; opacity: 0.9; max-width: 500px; margin: 0 auto; }
+
+    .products {
+      max-width: 1100px;
+      margin: 60px auto;
+      padding: 0 40px;
+    }
+    .products h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 24px; color: #1e293b; }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .product-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+    }
+    .product-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .product-img {
+      height: 160px;
+      background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+    .product-info { padding: 16px; }
+    .product-name  { font-weight: 600; margin-bottom: 4px; font-size: 0.9rem; }
+    .product-price { color: #3b82f6; font-weight: 700; font-size: 1rem; }
+    .product-btn {
+      width: 100%;
+      margin-top: 12px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+    .product-btn:hover { background: #2563eb; }
+
+    .footer {
+      background: #1e293b;
+      color: #94a3b8;
+      text-align: center;
+      padding: 40px;
+      margin-top: 80px;
+      font-size: 0.85rem;
+    }
+
+    /* Instrucciones de integración */
+    .integration-box {
+      max-width: 1100px;
+      margin: 0 auto 40px;
+      padding: 0 40px;
+    }
+    .integration-card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 24px;
+      color: #e2e8f0;
+    }
+    .integration-card h3 {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .integration-card code {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #60a5fa;
+      background: #0f172a;
+      padding: 12px 16px;
+      border-radius: 8px;
+      display: block;
+      word-break: break-all;
+    }
+    .integration-card p {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Simula una tienda online -->
+  <nav class="nav">
+    <div class="nav-brand">🛍️ Tienda Demo</div>
+    <div class="nav-links">
+      <a href="#">Inicio</a>
+      <a href="#">Productos</a>
+      <a href="#">Ofertas</a>
+      <a href="#">Contacto</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <h1>Bienvenido a Tienda Demo</h1>
+    <p>Esta página simula el sitio web de un cliente que usa SupCrud. El botón de soporte aparece en la esquina inferior derecha.</p>
+  </div>
+
+  <div class="products">
+    <h2>Productos destacados</h2>
+    <div class="products-grid">
+      <div class="product-card">
+        <div class="product-img">👟</div>
+        <div class="product-info">
+          <div class="product-name">Zapatos Running Pro</div>
+          <div class="product-price">$189.900</div>
+          <button class="product-btn">Agregar al carrito</button>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-img">👕</div>
+        <div class="product-info">
+          <div class="product-name">Camiseta Deportiva</div>
+          <div class="product-price">$59.900</div>
+          <button class="product-btn">Agregar al carrito</button>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-img">🎒</div>
+        <div class="product-info">
+          <div class="product-name">Mochila Urbana</div>
+          <div class="product-price">$129.900</div>
+          <button class="product-btn">Agregar al carrito</button>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-img">⌚</div>
+        <div class="product-info">
+          <div class="product-name">Reloj Smartwatch</div>
+          <div class="product-price">$349.900</div>
+          <button class="product-btn">Agregar al carrito</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Tienda Demo · Powered by SupCrud · by Crudzaso
+  </div>
+
+  <!--
+    ══════════════════════════════════════════════════════════
+    WIDGET SUPCRUD
+    Esta es la única línea que el cliente pega en su web.
+    Cambia data-workspace por el workspace_key real.
+    ══════════════════════════════════════════════════════════
+  -->
+  <script
+    src="/widget/widget.js"
+    data-workspace="WS-LIBRERIA-005"
+    data-title="Soporte Libreria"
+    data-color="#3b82f6">
+  </script>
+
+</body>
+</html>

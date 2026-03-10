@@ -1,0 +1,3 @@
+email,password_hash,full_name
+admin@crudzaso.com,$2b$12$hashejemplo1,Carlos Crudzaso
+soporte@crudzaso.com,$2b$12$hashejemplo2,Ana Martínez

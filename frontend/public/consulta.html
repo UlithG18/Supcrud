@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consulta tu caso · SupCrud</title>
+  <link rel="stylesheet" href="../assets/css/auth.css">
+  <style>
+    .auth-wrapper { max-width: 480px; }
+
+    /* Pasos del flujo */
+    .step { display: none; }
+    .step.active { display: block; animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+
+    /* OTP input */
+    .otp-inputs {
+      display: flex; gap: 10px; justify-content: center; margin: 20px 0;
+    }
+    .otp-inputs input {
+      width: 44px; height: 52px;
+      text-align: center;
+      font-size: 1.4rem; font-weight: 600; font-family: var(--font-mono);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .otp-inputs input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .otp-inputs input.filled { border-color: var(--accent); }
+
+    /* Ticket view */
+    .ticket-view { display: flex; flex-direction: column; gap: 14px; }
+
+    .ticket-header {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+    }
+    .ticket-ref {
+      font-family: var(--font-mono); font-size: 0.75rem;
+      color: var(--accent); margin-bottom: 6px;
+    }
+    .ticket-subject {
+      font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 10px;
+    }
+    .ticket-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .info-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .info-item .label {
+      font-size: 0.68rem; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px;
+    }
+    .info-item .value { font-size: 0.82rem; color: var(--text); }
+
+    .description-box {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px;
+      font-size: 0.82rem; color: var(--text-dim); line-height: 1.6;
+    }
+
+    /* Conversación */
+    .conversation { display: flex; flex-direction: column; gap: 8px; }
+    .msg {
+      padding: 10px 14px; border-radius: 10px;
+      font-size: 0.82rem; line-height: 1.5; max-width: 88%;
+    }
+    .msg-agent {
+      background: var(--accent-glow); border: 1px solid rgba(59,130,246,0.2);
+      color: var(--text); align-self: flex-end;
+    }
+    .msg-user {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-dim); align-self: flex-start;
+    }
+    .msg-meta { font-size: 0.68rem; color: var(--text-muted); margin-bottom: 4px; }
+
+    .msg-input-row {
+      display: flex; gap: 8px; margin-top: 4px;
+    }
+    .msg-input-row input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 12px; color: var(--text);
+      font-family: var(--font-sans); font-size: 0.85rem; outline: none;
+      transition: border-color 0.15s;
+    }
+    .msg-input-row input:focus { border-color: var(--accent); }
+
+    /* Status colors */
+    .status-OPEN        { background:rgba(59,130,246,0.12); color:#60a5fa; border:1px solid rgba(59,130,246,0.25); }
+    .status-IN_PROGRESS { background:rgba(245,158,11,0.12); color:#fbbf24; border:1px solid rgba(245,158,11,0.25); }
+    .status-RESOLVED    { background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.25); }
+    .status-CLOSED      { background:rgba(100,116,139,0.12);color:#94a3b8; border:1px solid rgba(100,116,139,0.25); }
+    .status-REOPENED    { background:rgba(59,130,246,0.12); color:#60a5fa; border:1px solid rgba(59,130,246,0.25); }
+
+    .type-badge {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:24px; height:24px; border-radius:6px;
+      font-size:0.7rem; font-family:var(--font-mono); font-weight:500;
+    }
+    .type-P { background:rgba(59,130,246,0.15); color:#60a5fa; }
+    .type-Q { background:rgba(245,158,11,0.15);  color:#fbbf24; }
+    .type-R { background:rgba(239,68,68,0.15);   color:#f87171; }
+    .type-S { background:rgba(16,185,129,0.15);  color:#34d399; }
+
+    .resend-link {
+      font-size: 0.78rem; color: var(--text-muted);
+      text-align: center; margin-top: 12px;
+    }
+    .resend-link button {
+      background: none; border: none; color: var(--accent);
+      cursor: pointer; font-size: 0.78rem; padding: 0;
+    }
+    .resend-link button:hover { text-decoration: underline; }
+    .resend-link button:disabled { color: var(--text-muted); cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="auth-wrapper">
+
+    <div class="auth-brand">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">Sup<span>Crud</span></div>
+      </div>
+      <div class="tagline">by Crudzaso · Consulta tu caso</div>
+    </div>
+
+    <!-- ══ PASO 1: Ingresar código y email ══ -->
+    <div class="auth-card step active" id="paso1">
+      <h2>Consulta tu caso</h2>
+      <p class="subtitle">Ingresa tu código de referencia y correo para continuar</p>
+
+      <div class="form-group">
+        <label for="refCode">Código de referencia</label>
+        <input type="text" id="refCode" placeholder="REF-WSTIENDA-1234567890"
+               style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+        <div class="field-error" id="refError">Ingresa tu código de referencia</div>
+      </div>
+
+      <div class="form-group">
+        <label for="userEmail">Correo electrónico</label>
+        <input type="email" id="userEmail" placeholder="tu@email.com">
+        <div class="field-error" id="emailError">Ingresa tu correo electrónico</div>
+      </div>
+
+      <button class="btn-primary" id="btnSolicitarOTP">
+        <span class="btn-text">Enviar código de verificación</span>
+        <div class="spinner"></div>
+      </button>
+
+      <div class="alert" id="alertPaso1"></div>
+    </div>
+
+    <!-- ══ PASO 2: Ingresar OTP ══ -->
+    <div class="auth-card step" id="paso2">
+      <h2>Verifica tu identidad</h2>
+      <p class="subtitle" id="subtitleOTP">Te enviamos un código de 6 dígitos a tu correo</p>
+
+      <div class="otp-inputs" id="otpInputs">
+        <input type="text" maxlength="1" class="otp-digit" data-index="0">
+        <input type="text" maxlength="1" class="otp-digit" data-index="1">
+        <input type="text" maxlength="1" class="otp-digit" data-index="2">
+        <input type="text" maxlength="1" class="otp-digit" data-index="3">
+        <input type="text" maxlength="1" class="otp-digit" data-index="4">
+        <input type="text" maxlength="1" class="otp-digit" data-index="5">
+      </div>
+
+      <button class="btn-primary" id="btnVerificarOTP">
+        <span class="btn-text">Verificar y ver mi caso</span>
+        <div class="spinner"></div>
+      </button>
+
+      <div class="alert" id="alertPaso2"></div>
+
+      <div class="resend-link">
+        ¿No recibiste el código?
+        <button id="btnReenviar" onclick="reenviarOTP()">Reenviar</button>
+      </div>
+
+      <div style="text-align:center;margin-top:8px">
+        <button onclick="volverPaso1()"
+          style="background:none;border:none;color:var(--text-muted);font-size:0.78rem;cursor:pointer">
+          ← Cambiar datos
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ PASO 3: Ver el ticket ══ -->
+    <div class="auth-card step" id="paso3">
+      <div class="ticket-view" id="ticketView">
+        <!-- Se llena dinámicamente -->
+      </div>
+
+      <div style="text-align:center;margin-top:16px">
+        <button onclick="volverPaso1()"
+          style="background:none;border:none;color:var(--text-muted);font-size:0.78rem;cursor:pointer">
+          ← Consultar otro caso
+        </button>
+      </div>
+
+      <div class="alert" id="alertPaso3"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // Estado de la sesión del cliente
+    let sesion = { refCode: '', email: '', otp: '', ticket: null };
+
+    const statusLabel = {
+      OPEN:'Abierto', IN_PROGRESS:'En progreso',
+      RESOLVED:'Resuelto', CLOSED:'Cerrado', REOPENED:'Reabierto'
+    };
+    const typeLabel = { P:'Petición', Q:'Queja', R:'Reclamo', S:'Sugerencia' };
+    const fecha = (d) => new Date(d).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    // ── Mostrar alerta ────────────────────────────────────────
+    const showAlert = (id, msg, type) => {
+      const el = document.getElementById(id);
+      el.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;
+      el.className   = `alert ${type} visible`;
+    };
+    const hideAlert = (id) => document.getElementById(id).className = 'alert';
+
+    const setLoading = (btn, loading) => {
+      btn.disabled = loading;
+      btn.classList.toggle('loading', loading);
+    };
+
+    // ── Cambiar paso ──────────────────────────────────────────
+    const irAPaso = (n) => {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById(`paso${n}`).classList.add('active');
+    };
+
+    const volverPaso1 = () => {
+      sesion = { refCode: '', email: '', otp: '', ticket: null };
+      document.getElementById('refCode').value   = '';
+      document.getElementById('userEmail').value = '';
+      limpiarOTP();
+      irAPaso(1);
+    };
+
+    // ══════════════════════════════════════════════════════════
+    //  PASO 1 — Solicitar OTP
+    // ══════════════════════════════════════════════════════════
+    const btnSolicitar = document.getElementById('btnSolicitarOTP');
+
+    btnSolicitar.addEventListener('click', async () => {
+      hideAlert('alertPaso1');
+      const refCode   = document.getElementById('refCode').value.trim();
+      const userEmail = document.getElementById('userEmail').value.trim();
+
+      if (!refCode)   return showAlert('alertPaso1', 'Ingresa tu código de referencia', 'error');
+      if (!userEmail) return showAlert('alertPaso1', 'Ingresa tu correo electrónico', 'error');
+
+      setLoading(btnSolicitar, true);
+
+      try {
+        const res  = await fetch('/api/public/solicitar-otp', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ referenceCode: refCode, email: userEmail })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          sesion.refCode = refCode;
+          sesion.email   = userEmail;
+          document.getElementById('subtitleOTP').textContent =
+            `Enviamos un código a ${userEmail}. Válido por 10 minutos.`;
+          limpiarOTP();
+          irAPaso(2);
+          // Foco en el primer campo del OTP
+          setTimeout(() => document.querySelector('.otp-digit').focus(), 100);
+        } else {
+          showAlert('alertPaso1', data.message, 'error');
+        }
+      } catch (e) {
+        showAlert('alertPaso1', 'No se pudo conectar con el servidor', 'error');
+      } finally {
+        setLoading(btnSolicitar, false);
+      }
+    });
+
+    // ── Enter en los campos del paso 1 ────────────────────────
+    ['refCode', 'userEmail'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => {
+        if (e.key === 'Enter') btnSolicitar.click();
+      });
+    });
+
+    // ══════════════════════════════════════════════════════════
+    //  OTP — Inputs de 6 dígitos con auto-avance
+    // ══════════════════════════════════════════════════════════
+    const otpDigits = document.querySelectorAll('.otp-digit');
+
+    otpDigits.forEach((input, i) => {
+      input.addEventListener('input', (e) => {
+        const val = e.target.value.replace(/\D/g, '');
+        input.value = val;
+        input.classList.toggle('filled', val !== '');
+
+        // Avanza al siguiente campo si hay valor
+        if (val && i < 5) otpDigits[i + 1].focus();
+
+        // Si llenó el último, intenta verificar automáticamente
+        if (i === 5 && val) verificarOTP();
+      });
+
+      input.addEventListener('keydown', (e) => {
+        // Retrocede al campo anterior con backspace
+        if (e.key === 'Backspace' && !input.value && i > 0) {
+          otpDigits[i - 1].focus();
+          otpDigits[i - 1].value = '';
+          otpDigits[i - 1].classList.remove('filled');
+        }
+      });
+
+      // Permite pegar el código completo en el primer campo
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const paste = e.clipboardData.getData('text').replace(/\D/g, '').substring(0, 6);
+        paste.split('').forEach((char, idx) => {
+          if (otpDigits[idx]) {
+            otpDigits[idx].value = char;
+            otpDigits[idx].classList.add('filled');
+          }
+        });
+        if (paste.length === 6) verificarOTP();
+      });
+    });
+
+    const limpiarOTP = () => {
+      otpDigits.forEach(d => { d.value = ''; d.classList.remove('filled'); });
+    };
+
+    const getOTPValue = () => Array.from(otpDigits).map(d => d.value).join('');
+
+    // ══════════════════════════════════════════════════════════
+    //  PASO 2 — Verificar OTP
+    // ══════════════════════════════════════════════════════════
+    const btnVerificar = document.getElementById('btnVerificarOTP');
+
+    const verificarOTP = async () => {
+      const otp = getOTPValue();
+      if (otp.length < 6) return;
+
+      hideAlert('alertPaso2');
+      setLoading(btnVerificar, true);
+
+      try {
+        const res  = await fetch('/api/public/verificar-otp', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            referenceCode: sesion.refCode,
+            email:         sesion.email,
+            otp
+          })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          sesion.otp    = otp;
+          sesion.ticket = data.data;
+          // Consulta addons del workspace antes de renderizar
+          // para saber si mostrar el botón de adjuntar
+          let addons = {};
+          try {
+            const ar   = await fetch(`/api/public/workspace-addons/${data.data.workspaceKey}`);
+            const ad   = await ar.json();
+            if (ad.ok) addons = ad.data;
+          } catch (e) { /* sin addons por defecto */ }
+          sesion.addons = addons;
+          renderTicket(data.data, addons);
+          irAPaso(3);
+        } else {
+          showAlert('alertPaso2', data.message, 'error');
+          limpiarOTP();
+          setTimeout(() => otpDigits[0].focus(), 100);
+        }
+      } catch (e) {
+        showAlert('alertPaso2', 'No se pudo conectar con el servidor', 'error');
+      } finally {
+        setLoading(btnVerificar, false);
+      }
+    };
+
+    btnVerificar.addEventListener('click', verificarOTP);
+
+    // ── Reenviar OTP con cooldown ─────────────────────────────
+    const reenviarOTP = async () => {
+      const btn = document.getElementById('btnReenviar');
+      btn.disabled = true;
+
+      try {
+        const res  = await fetch('/api/public/solicitar-otp', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ referenceCode: sesion.refCode, email: sesion.email })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          showAlert('alertPaso2', 'Código reenviado. Revisa tu correo.', 'success');
+          limpiarOTP();
+          otpDigits[0].focus();
+          // Cooldown de 30 segundos para reenviar
+          let segundos = 30;
+          btn.textContent = `Reenviar (${segundos}s)`;
+          const interval = setInterval(() => {
+            segundos--;
+            btn.textContent = `Reenviar (${segundos}s)`;
+            if (segundos <= 0) {
+              clearInterval(interval);
+              btn.textContent = 'Reenviar';
+              btn.disabled = false;
+            }
+          }, 1000);
+        } else {
+          showAlert('alertPaso2', data.message, 'error');
+          btn.disabled = false;
+        }
+      } catch (e) {
+        btn.disabled = false;
+      }
+    };
+
+    // ══════════════════════════════════════════════════════════
+    //  PASO 3 — Renderizar el ticket
+    // ══════════════════════════════════════════════════════════
+    const renderTicket = (t, addons = {}) => {
+      const view = document.getElementById('ticketView');
+
+      view.innerHTML = `
+        <!-- Header del ticket -->
+        <div class="ticket-header">
+          <div class="ticket-ref">${t.referenceCode}</div>
+          <div class="ticket-subject">${t.subject}</div>
+          <div class="ticket-badges">
+            <span class="badge-status status-${t.status}" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:0.68rem;font-family:var(--font-mono)">
+              ${statusLabel[t.status]}
+            </span>
+            <span class="type-badge type-${t.type}" title="${typeLabel[t.type]}">${t.type}</span>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="info-row">
+          <div class="info-item">
+            <div class="label">Tipo</div>
+            <div class="value">${typeLabel[t.type]}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Prioridad</div>
+            <div class="value">${t.priority}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Agente asignado</div>
+            <div class="value">${t.assignedAgentName || 'Pendiente de asignación'}</div>
+          </div>
+          <div class="info-item">
+            <div class="label">Fecha</div>
+            <div class="value">${fecha(t.createdAt)}</div>
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div>
+          <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Descripción</div>
+          <div class="description-box">${t.description}</div>
+        </div>
+
+        <!-- Conversación -->
+        <div>
+          <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Conversación</div>
+          <div class="conversation" id="conversacion">
+            ${t.conversation.length
+              ? t.conversation.map(m => `
+                  <div class="msg msg-${m.senderType.toLowerCase()}">
+                    <div class="msg-meta">${m.senderType === 'AGENT' ? '🧑‍💼 Agente' : '👤 Tú'} · ${fecha(m.createdAt)}</div>
+                    ${m.content}
+                  </div>
+                `).join('')
+              : '<p style="color:var(--text-muted);font-size:0.8rem">Aún no hay respuestas.</p>'
+            }
+          </div>
+        </div>
+
+        <!-- Adjuntos -->
+        ${t.attachments && t.attachments.length ? `
+          <div>
+            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Archivos adjuntos</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              ${t.attachments.map(a => {
+                const esImagen = a.mimetype?.startsWith('image/');
+                const icono    = esImagen ? '🖼️' : a.mimetype?.includes('pdf') ? '📄' : '📎';
+                const tamano   = a.size ? `${(a.size / 1024).toFixed(1)} KB` : '';
+                const quien    = a.uploadedByType === 'AGENT' ? '🧑‍💼 Agente' : '👤 Tú';
+                return `
+                  <a href="${a.url}" target="_blank" rel="noopener"
+                    style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+                           background:var(--surface2);border:1px solid var(--border);
+                           border-radius:8px;text-decoration:none;transition:border-color 0.15s"
+                    onmouseover="this.style.borderColor='var(--accent)'"
+                    onmouseout="this.style.borderColor='var(--border)'">
+                    ${esImagen
+                      ? `<img src="${a.url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0">`
+                      : `<span style="font-size:1.5rem;flex-shrink:0">${icono}</span>`
+                    }
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:0.8rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.filename}</div>
+                      <div style="font-size:0.68rem;color:var(--text-muted)">${tamano} · ${quien}</div>
+                    </div>
+                    <span style="font-size:0.72rem;color:var(--accent);flex-shrink:0">Ver →</span>
+                  </a>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Responder y adjuntar (solo si el ticket no está cerrado) -->
+        ${t.status !== 'CLOSED' ? `
+          <div>
+            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Agregar información</div>
+            <div class="msg-input-row">
+              <input type="text" id="clienteMsg" placeholder="Escribe tu mensaje..."
+                     onkeydown="if(event.key==='Enter') enviarMensajeCliente()">
+              <button class="btn btn-primary btn-sm" onclick="enviarMensajeCliente()">Enviar</button>
+            </div>
+            ${addons['ATTACHMENTS'] ? `
+            <!-- Adjuntar archivo — staging, no sube hasta confirmar -->
+            <div style="margin-top:8px">
+              <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+                            font-size:0.78rem;color:var(--text-muted);
+                            background:var(--surface2);border:1px dashed var(--border);
+                            border-radius:8px;padding:7px 12px;transition:border-color 0.15s"
+                     id="labelAdjunto"
+                     onmouseover="this.style.borderColor='var(--accent)'"
+                     onmouseout="this.style.borderColor=document._adjConsulta?'var(--accent)':'var(--border)'">
+                📎 <span id="adjTexto">Adjuntar archivo</span>
+                <input type="file" id="inputAdjuntoPublico" style="display:none"
+                  accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                  onchange="seleccionarAdjConsulta(this)">
+              </label>
+            </div>
+            <!-- Preview del adjunto seleccionado -->
+            <div id="adjConsultaPreview" style="display:none;margin-top:8px;
+              padding:8px 12px;background:var(--surface2);border:1px solid var(--accent);
+              border-radius:8px;align-items:center;gap:10px">
+              <span id="adjConsultaIcon" style="font-size:1.1rem;flex-shrink:0">📎</span>
+              <div style="flex:1;min-width:0">
+                <div id="adjConsultaNombre" style="font-size:0.8rem;color:var(--text);
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+                <div id="adjConsultaTamano" style="font-size:0.7rem;color:var(--text-muted)"></div>
+              </div>
+              <button onclick="eliminarAdjConsulta()"
+                style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);
+                       color:#f87171;border-radius:6px;padding:3px 10px;cursor:pointer;
+                       font-size:0.75rem;font-family:var(--font-sans)">
+                ✕ Quitar
+              </button>
+              <button onclick="enviarAdjConsulta()"
+                style="background:var(--accent);border:none;color:#fff;
+                       border-radius:6px;padding:3px 10px;cursor:pointer;
+                       font-size:0.75rem;font-family:var(--font-sans)">
+                ⬆ Enviar
+              </button>
+            </div>
+            <div id="adjConsultaEstado" style="font-size:0.72rem;margin-top:4px;color:var(--text-muted)"></div>
+            ` : ''}
+          </div>
+        ` : `
+          <div style="text-align:center;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--text-muted)">
+            Este caso está cerrado.
+          </div>
+        `}
+      `;
+    };
+
+    // ── Enviar mensaje como cliente ───────────────────────────
+    const enviarMensajeCliente = async () => {
+      const input   = document.getElementById('clienteMsg');
+      const content = input?.value.trim();
+      if (!content) return;
+
+      try {
+        const res  = await fetch(`/api/public/tickets/${sesion.ticket.referenceCode}/messages`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ email: sesion.email, content })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          input.value = '';
+          const conv = document.getElementById('conversacion');
+          const div  = document.createElement('div');
+          div.className = 'msg msg-user';
+          div.innerHTML = `<div class="msg-meta">👤 Tú · ahora</div>${content}`;
+          conv.appendChild(div);
+          conv.scrollTop = conv.scrollHeight;
+        } else {
+          showAlert('alertPaso3', data.message, 'error');
+        }
+      } catch (e) {
+        showAlert('alertPaso3', 'Error al enviar el mensaje', 'error');
+      }
+    };
+
+    // ── Staging adjunto en consulta pública ──────────────────
+    const seleccionarAdjConsulta = (input) => {
+      const file = input.files[0];
+      if (!file) return;
+      document._adjConsulta = file;
+      document.getElementById('adjConsultaIcon').textContent    =
+        file.type.startsWith('image/') ? '🖼️' : file.type.includes('pdf') ? '📄' : '📎';
+      document.getElementById('adjConsultaNombre').textContent  = file.name;
+      document.getElementById('adjConsultaTamano').textContent  = `${(file.size/1024).toFixed(1)} KB`;
+      document.getElementById('adjTexto').textContent           = 'Cambiar archivo...';
+      document.getElementById('adjConsultaPreview').style.display = 'flex';
+      document.getElementById('labelAdjunto').style.borderColor   = 'var(--accent)';
+    };
+
+    const eliminarAdjConsulta = () => {
+      document._adjConsulta = null;
+      const inp = document.getElementById('inputAdjuntoPublico');
+      if (inp) inp.value = '';
+      const prev = document.getElementById('adjConsultaPreview');
+      if (prev) prev.style.display = 'none';
+      const txt = document.getElementById('adjTexto');
+      if (txt) txt.textContent = 'Adjuntar archivo';
+      const lbl = document.getElementById('labelAdjunto');
+      if (lbl) lbl.style.borderColor = 'var(--border)';
+      const est = document.getElementById('adjConsultaEstado');
+      if (est) est.textContent = '';
+    };
+
+    const enviarAdjConsulta = async () => {
+      if (!document._adjConsulta || !sesion.ticket) return;
+
+      const file  = document._adjConsulta;
+      const est   = document.getElementById('adjConsultaEstado');
+      const btnEnv = document.querySelector('#adjConsultaPreview button:last-child');
+      est.textContent = '⏳ Subiendo...';
+      est.style.color = 'var(--text-muted)';
+      if (btnEnv) { btnEnv.disabled = true; btnEnv.textContent = '⏳'; }
+
+      try {
+        const formData = new FormData();
+        formData.append('file',  file);
+        formData.append('email', sesion.email);
+
+        const res  = await fetch(
+          `/api/public/tickets/${sesion.ticket.referenceCode}/attachments`,
+          { method: 'POST', body: formData }
+        );
+        const data = await res.json();
+
+        if (data.ok) {
+          const a     = data.data;
+          const esImg = a.mimetype?.startsWith('image/');
+          const conv  = document.getElementById('conversacion');
+          conv.insertAdjacentHTML('beforeend', `
+            <div class="msg msg-user" style="max-width:100%">
+              <div class="msg-meta">👤 Tú · ahora · 📎 Archivo</div>
+              <a href="${a.url}" target="_blank" rel="noopener"
+                style="display:flex;align-items:center;gap:8px;margin-top:6px;
+                       text-decoration:none;color:var(--accent)">
+                ${esImg
+                  ? `<img src="${a.url}" style="max-width:120px;max-height:80px;object-fit:cover;border-radius:6px">`
+                  : `<span style="font-size:1.2rem">${a.mimetype?.includes('pdf') ? '📄' : '📎'}</span>`
+                }
+                <span style="font-size:0.78rem">${a.filename}</span>
+              </a>
+            </div>
+          `);
+          conv.scrollTop = conv.scrollHeight;
+          eliminarAdjConsulta();
+        } else {
+          est.textContent = '✕ ' + data.message;
+          est.style.color = 'var(--error)';
+          if (btnEnv) { btnEnv.disabled = false; btnEnv.textContent = '⬆ Enviar'; }
+        }
+      } catch (e) {
+        est.textContent = '✕ Error al subir el archivo';
+        est.style.color = 'var(--error)';
+        if (btnEnv) { btnEnv.disabled = false; btnEnv.textContent = '⬆ Enviar'; }
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+code,name,description
+ATTACHMENTS,Adjuntos de Archivos,Permite subir archivos via Cloudinary
+AI_ASSIST,Asistente de IA,Clasificación automática con OpenAI
+KNOWLEDGE_BASE,Base de Conocimiento,Artículos de ayuda en el widget

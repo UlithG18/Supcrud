@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Workspace · SupCrud</title>
+  <link rel="stylesheet" href="/assets/css/dashboard.css">
+  <style>
+    /* ── Estilos específicos del panel workspace ── */
+    .ticket-row { cursor: pointer; }
+    .ticket-row:hover td { background: var(--surface2); }
+
+    .type-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+    .type-P { background: rgba(59,130,246,0.15);  color: #60a5fa; }
+    .type-Q { background: rgba(245,158,11,0.15);  color: #fbbf24; }
+    .type-R { background: rgba(239,68,68,0.15);   color: #f87171; }
+    .type-S { background: rgba(16,185,129,0.15);  color: #34d399; }
+
+    .priority-badge {
+      font-size: 0.68rem; font-family: var(--font-mono);
+      padding: 2px 8px; border-radius: 20px;
+    }
+    .priority-LOW      { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+    .priority-MEDIUM   { background: rgba(59,130,246,0.15);  color: #60a5fa; }
+    .priority-HIGH     { background: rgba(245,158,11,0.15);  color: #fbbf24; }
+    .priority-CRITICAL { background: rgba(239,68,68,0.15);   color: #f87171; }
+
+    /* ── Detalle del ticket ── */
+    .detail-panel {
+      display: none;
+      position: fixed;
+      top: 0; right: 0;
+      width: 480px; height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      z-index: 150;
+      display: none;
+      flex-direction: column;
+      box-shadow: -8px 0 32px rgba(0,0,0,0.4);
+    }
+    .detail-panel.open { display: flex; }
+
+    .detail-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    }
+    .detail-header h3 { font-size: 0.95rem; font-weight: 600; color: #fff; line-height: 1.4; }
+    .detail-header .ref {
+      font-size: 0.7rem; font-family: var(--font-mono);
+      color: var(--accent); margin-top: 4px;
+    }
+    .btn-close {
+      background: transparent; border: none;
+      color: var(--text-muted); cursor: pointer;
+      font-size: 1.2rem; padding: 4px; flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .btn-close:hover { color: var(--text); }
+
+    .detail-body {
+      flex: 1; overflow-y: auto; padding: 20px 24px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    .detail-meta {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .meta-item .label {
+      font-size: 0.68rem; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px;
+    }
+    .meta-item .value { font-size: 0.82rem; color: var(--text); }
+
+    .description-box {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px;
+      font-size: 0.82rem; color: var(--text-dim); line-height: 1.6;
+    }
+
+    /* Conversación */
+    .conversation { display: flex; flex-direction: column; gap: 10px; }
+    .msg {
+      padding: 10px 14px; border-radius: 10px;
+      font-size: 0.82rem; line-height: 1.5; max-width: 90%;
+    }
+    .msg-agent {
+      background: var(--accent-glow);
+      border: 1px solid rgba(59,130,246,0.2);
+      color: var(--text); align-self: flex-end;
+    }
+    .msg-user {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim); align-self: flex-start;
+    }
+    .msg .msg-meta {
+      font-size: 0.68rem; color: var(--text-muted); margin-bottom: 4px;
+    }
+
+    .msg-input-wrap {
+      display: flex; gap: 8px; padding: 16px 24px;
+      border-top: 1px solid var(--border);
+    }
+    .msg-input-wrap input {
+      flex: 1; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 9px 12px; color: var(--text);
+      font-family: var(--font-sans); font-size: 0.85rem; outline: none;
+      transition: border-color 0.15s;
+    }
+    .msg-input-wrap input:focus { border-color: var(--accent); }
+
+    /* Acciones del ticket */
+    .ticket-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding: 14px 24px; border-top: 1px solid var(--border);
+    }
+    .ticket-actions select {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 7px 10px;
+      color: var(--text); font-family: var(--font-sans); font-size: 0.8rem;
+      outline: none; cursor: pointer;
+    }
+
+    /* Overlay */
+    .detail-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 140;
+    }
+    .detail-overlay.open { display: block; }
+
+    /* Paginación */
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 16px 0;
+    }
+    .pagination button {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 12px;
+      color: var(--text-muted); font-size: 0.78rem; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .pagination button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .pagination .page-info { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* Filtros */
+    .filters {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 16px; align-items: center;
+    }
+    .filters input, .filters select {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 7px 12px;
+      color: var(--text); font-family: var(--font-sans); font-size: 0.82rem;
+      outline: none; transition: border-color 0.15s;
+    }
+    .filters input:focus, .filters select:focus { border-color: var(--accent); }
+    .filters input { min-width: 200px; }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">Sup<span>Crud</span></div>
+    </div>
+    <div class="sidebar-role" id="workspaceName">Workspace</div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-section="dashboard"><span class="icon">📊</span> Dashboard</div>
+      <div class="nav-item" data-section="tickets"><span class="icon">🎫</span> Tickets</div>
+      <div class="nav-item" data-section="equipo"><span class="icon">👥</span> Equipo</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="name" id="sidebarName">—</div>
+        <div class="email" id="sidebarEmail">—</div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <h1 id="topbarTitle">Dashboard</h1>
+      <span class="badge" id="roleBadge">AGENT</span>
+    </div>
+
+    <div class="content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="section active" id="sec-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="label">Total tickets</div><div class="value" id="statTotal">—</div></div>
+          <div class="stat-card"><div class="label">Abiertos</div><div class="value" id="statOpen" style="color:#60a5fa">—</div></div>
+          <div class="stat-card"><div class="label">En progreso</div><div class="value" id="statProgress" style="color:#fbbf24">—</div></div>
+          <div class="stat-card"><div class="label">Resueltos</div><div class="value" id="statResolved" style="color:#34d399">—</div></div>
+          <div class="stat-card"><div class="label">Cerrados</div><div class="value" id="statClosed" style="color:#94a3b8">—</div></div>
+          <div class="stat-card"><div class="label">Miembros</div><div class="value" id="statMembers">—</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Tickets recientes</h3>
+            <button class="btn btn-primary btn-sm" onclick="irATickets()">Ver todos</button>
+          </div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Ref</th><th>Asunto</th><th>Tipo</th><th>Estado</th><th>Prioridad</th><th>Fecha</th></tr>
+                </thead>
+                <tbody id="tbodyRecientes">
+                  <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TICKETS ── -->
+      <div class="section" id="sec-tickets">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Bandeja de tickets</h3>
+            <!-- Solo ADMIN puede crear tickets manualmente -->
+            <button class="btn btn-primary btn-sm" id="btnNuevoTicket" onclick="abrirModalCrear()" style="display:none">+ Nuevo ticket</button>
+          </div>
+          <div class="panel-body">
+
+            <!-- Filtros -->
+            <div class="filters">
+              <input type="text" id="filtroSearch" placeholder="🔍 Buscar por asunto o email..." oninput="aplicarFiltros()">
+              <select id="filtroStatus" onchange="aplicarFiltros()">
+                <option value="">Todos los estados</option>
+                <option value="OPEN">Abierto</option>
+                <option value="IN_PROGRESS">En progreso</option>
+                <option value="RESOLVED">Resuelto</option>
+                <option value="CLOSED">Cerrado</option>
+                <option value="REOPENED">Reabierto</option>
+              </select>
+              <select id="filtroType" onchange="aplicarFiltros()">
+                <option value="">Todos los tipos</option>
+                <option value="P">Petición</option>
+                <option value="Q">Queja</option>
+                <option value="R">Reclamo</option>
+                <option value="S">Sugerencia</option>
+              </select>
+              <select id="filtroPriority" onchange="aplicarFiltros()">
+                <option value="">Todas las prioridades</option>
+                <option value="LOW">Baja</option>
+                <option value="MEDIUM">Media</option>
+                <option value="HIGH">Alta</option>
+                <option value="CRITICAL">Crítica</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" onclick="limpiarFiltros()">Limpiar</button>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Ref</th><th>Asunto</th><th>Tipo</th><th>Estado</th><th>Prioridad</th><th>Usuario</th><th>Agente</th><th>Fecha</th></tr>
+                </thead>
+                <tbody id="tbodyTickets">
+                  <tr><td colspan="8"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="pagination" id="pagination"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── EQUIPO ── -->
+      <div class="section" id="sec-equipo">
+        <div class="panel">
+          <div class="panel-header"><h3>Miembros del workspace</h3></div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Se unió</th><th>Acciones</th></tr>
+                </thead>
+                <tbody id="tbodyEquipo">
+                  <tr><td colspan="4"><div class="empty"><div class="empty-icon">⏳</div><p>Cargando...</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ Panel lateral: Detalle del ticket ══ -->
+  <div class="detail-overlay" id="detailOverlay" onclick="cerrarDetalle()"></div>
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <div>
+        <div class="ref" id="detailRef">—</div>
+        <h3 id="detailSubject">—</h3>
+      </div>
+      <button class="btn-close" onclick="cerrarDetalle()">✕</button>
+    </div>
+
+    <div class="detail-body">
+      <!-- Meta datos -->
+      <div class="detail-meta" id="detailMeta"></div>
+
+      <!-- Descripción -->
+      <div>
+        <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Descripción</div>
+        <div class="description-box" id="detailDesc">—</div>
+      </div>
+
+      <!-- Conversación -->
+      <div>
+        <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Conversación</div>
+        <div class="conversation" id="detailConversation">
+          <p style="color:var(--text-muted);font-size:0.8rem">Sin mensajes aún.</p>
+        </div>
+      </div>
+
+      <!-- Adjuntos -->
+      <div id="seccionAdjuntos" style="display:none">
+        <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Archivos adjuntos</div>
+        <div id="detailAttachments" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <!-- Historial de eventos -->
+      <div>
+        <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Historial</div>
+        <div id="detailEvents" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div class="ticket-actions">
+      <select id="actionStatus" onchange="cambiarEstado()">
+        <option value="">Cambiar estado...</option>
+        <option value="OPEN">Abierto</option>
+        <option value="IN_PROGRESS">En progreso</option>
+        <option value="RESOLVED">Resuelto</option>
+        <option value="CLOSED">Cerrado</option>
+        <option value="REOPENED">Reabierto</option>
+      </select>
+      <!-- Solo ADMIN puede reasignar agentes -->
+      <select id="actionAgent" onchange="asignarAgente()" style="display:none">
+        <option value="">Asignar agente...</option>
+      </select>
+      <!-- Addon: AI_ASSIST -->
+      <button id="btnAISuggest" class="btn btn-ghost btn-sm" onclick="sugerirIA()"
+        style="display:none" title="Sugerir respuesta con IA">
+        🤖 Sugerir respuesta
+      </button>
+      <!-- Addon: ATTACHMENTS — selección con staging, no sube inmediato -->
+      <label id="btnAdjunto" class="btn btn-ghost btn-sm"
+        style="display:none;cursor:pointer" title="Adjuntar archivo">
+        📎 Adjuntar
+        <input type="file" id="inputAdjunto" style="display:none"
+          accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+          onchange="seleccionarAdjuntoAdmin(this)">
+      </label>
+    </div>
+
+    <!-- Preview adjunto en staging (admin) -->
+    <div id="adjAdminPreview" style="display:none;padding:8px 24px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;
+                  background:var(--surface2);border:1px solid var(--accent);
+                  border-radius:8px">
+        <span id="adjAdminIcon" style="font-size:1.2rem;flex-shrink:0">📎</span>
+        <div style="flex:1;min-width:0">
+          <div id="adjAdminNombre" style="font-size:0.8rem;color:var(--text);
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+          <div id="adjAdminTamano" style="font-size:0.7rem;color:var(--text-muted)"></div>
+        </div>
+        <button onclick="eliminarAdjuntoAdmin()"
+          style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);
+                 color:#f87171;border-radius:6px;padding:4px 10px;cursor:pointer;
+                 font-size:0.75rem;font-family:var(--font-sans);white-space:nowrap">
+          ✕ Quitar
+        </button>
+        <button onclick="enviarAdjuntoAdmin()"
+          style="background:var(--accent);border:none;color:#fff;
+                 border-radius:6px;padding:4px 10px;cursor:pointer;
+                 font-size:0.75rem;font-family:var(--font-sans);white-space:nowrap">
+          ⬆ Subir
+        </button>
+      </div>
+    </div>
+
+    <!-- Sugerencia IA (área expandible) -->
+    <div id="areaIA" style="display:none;padding:10px 24px;border-top:1px solid var(--border)">
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;
+                  letter-spacing:0.06em;margin-bottom:6px">Sugerencia de IA — edítala antes de enviar</div>
+      <textarea id="textoIA" rows="3"
+        style="width:100%;background:var(--surface2);border:1px solid var(--accent);
+               border-radius:8px;padding:9px 12px;color:var(--text);
+               font-family:var(--font-sans);font-size:0.82rem;outline:none;
+               resize:vertical;box-sizing:border-box"></textarea>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button class="btn btn-primary btn-sm" onclick="usarSugerencia()">Usar esta respuesta</button>
+        <button class="btn btn-ghost btn-sm" onclick="cerrarIA()">Descartar</button>
+      </div>
+    </div>
+
+    <!-- Enviar mensaje -->
+    <div class="msg-input-wrap">
+      <input type="text" id="msgInput" placeholder="Escribe un mensaje..."
+             onkeydown="if(event.key==='Enter') enviarMensaje()">
+      <button class="btn btn-primary btn-sm" onclick="enviarMensaje()">Enviar</button>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Crear ticket ══ -->
+  <div class="modal-overlay" id="modalCrear">
+    <div class="modal" style="max-width:500px">
+      <h3>Nuevo ticket</h3>
+      <p class="modal-sub">Crea un ticket en nombre del usuario</p>
+      <div class="form-group">
+        <label>Email del usuario *</label>
+        <input type="email" id="newUserEmail" placeholder="cliente@email.com">
+      </div>
+      <div class="form-group">
+        <label>Asunto *</label>
+        <input type="text" id="newSubject" placeholder="Describe brevemente el problema">
+      </div>
+      <div class="form-group">
+        <label>Descripción *</label>
+        <textarea id="newDesc" rows="3"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                 padding:9px 12px;color:var(--text);font-family:var(--font-sans);font-size:0.85rem;
+                 outline:none;resize:vertical"
+          placeholder="Detalla el problema o solicitud..."></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label>Tipo *</label>
+          <select id="newType">
+            <option value="P">Petición</option>
+            <option value="Q">Queja</option>
+            <option value="R">Reclamo</option>
+            <option value="S">Sugerencia</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prioridad</label>
+          <select id="newPriority">
+            <option value="LOW">Baja</option>
+            <option value="MEDIUM" selected>Media</option>
+            <option value="HIGH">Alta</option>
+            <option value="CRITICAL">Crítica</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Categoría</label>
+        <input type="text" id="newCategory" placeholder="Ej: envíos, facturación...">
+      </div>
+      <!-- Adjunto inicial — visible solo si ATTACHMENTS está activo -->
+      <div id="modalAdjSeccion" class="form-group" style="display:none">
+        <label>Adjuntar archivo (opcional)</label>
+        <label id="modalAdjLabel"
+          style="display:flex;align-items:center;gap:6px;cursor:pointer;
+                 background:var(--surface2);border:1px dashed var(--border);
+                 border-radius:8px;padding:9px 12px;font-size:0.82rem;
+                 color:var(--text-muted);transition:border-color 0.15s"
+          onmouseover="this.style.borderColor='var(--accent)'"
+          onmouseout="this.style.borderColor=document._adjModal?'var(--accent)':'var(--border)'">
+          📎 <span id="modalAdjTexto">Seleccionar archivo...</span>
+          <input type="file" id="modalAdjInput" style="display:none"
+            accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+            onchange="seleccionarAdjModal(this)">
+        </label>
+        <!-- Preview -->
+        <div id="modalAdjPreview" style="display:none;margin-top:8px;
+          padding:8px 12px;background:var(--surface2);border:1px solid var(--accent);
+          border-radius:8px;align-items:center;gap:10px">
+          <span id="modalAdjIcon" style="font-size:1.1rem;flex-shrink:0">📎</span>
+          <div style="flex:1;min-width:0">
+            <div id="modalAdjNombre" style="font-size:0.8rem;color:var(--text);
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+            <div id="modalAdjTamano" style="font-size:0.7rem;color:var(--text-muted)"></div>
+          </div>
+          <button onclick="eliminarAdjModal()"
+            style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);
+                   color:#f87171;border-radius:6px;padding:3px 10px;cursor:pointer;
+                   font-size:0.75rem;font-family:var(--font-sans)">
+            ✕ Quitar
+          </button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="cerrarModal('modalCrear')">Cancelar</button>
+        <button class="btn btn-primary" onclick="crearTicket()">Crear ticket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: Confirmación ══ -->
+  <div class="modal-overlay" id="modalConfirm">
+    <div class="modal" style="max-width:420px;text-align:center">
+      <div id="confirmIcon" style="font-size:2.5rem;margin-bottom:12px">⚠️</div>
+      <h3 id="confirmTitle" style="margin-bottom:8px">¿Estás seguro?</h3>
+      <p id="confirmMsg" style="color:var(--text-muted);font-size:0.85rem;line-height:1.6;margin-bottom:8px"></p>
+      <p id="confirmWarning" style="color:#ef4444;font-size:0.78rem;margin-bottom:20px">Esta acción no se puede deshacer.</p>
+      <div class="modal-actions" style="justify-content:center;gap:12px">
+        <button class="btn btn-ghost" onclick="cerrarModal('modalConfirm')" style="min-width:110px">Cancelar</button>
+        <button id="confirmBtn" class="btn" style="min-width:110px;background:#ef4444;color:#fff;border:none">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  (async () => {
+    // ── Auth guard ────────────────────────────────────────────
+    const token = localStorage.getItem('token');
+    const user  = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!token || !['ADMIN','AGENT'].includes(user.role)) window.location.href = '/workspace/login';
+
+    document.getElementById('sidebarName').textContent  = user.full_name   || '—';
+    document.getElementById('sidebarEmail').textContent = user.email        || '—';
+    document.getElementById('workspaceName').textContent = user.workspaceName || 'Workspace';
+    document.getElementById('roleBadge').textContent    = user.role         || '—';
+
+    // ── Visibilidad según rol ─────────────────────────────────
+    // ADMIN → ve todo | AGENT → no crea tickets ni reasigna agentes
+    const esAdmin = user.role === 'ADMIN';
+    document.getElementById('btnNuevoTicket').style.display = esAdmin ? 'inline-flex' : 'none';
+    document.getElementById('actionAgent').style.display    = esAdmin ? 'block'       : 'none';
+
+    // ── API helper ────────────────────────────────────────────
+    const api = async (url, options = {}) => {
+      const res = await fetch(url, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...(options.headers || {}) }
+      });
+      return res.json();
+    };
+
+    // ── Toast ─────────────────────────────────────────────────
+    const toastEl = document.getElementById('toast');
+    let toastTimer;
+    const showToast = (msg, type = 'success') => {
+      clearTimeout(toastTimer);
+      toastEl.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;
+      toastEl.className   = `toast ${type} visible`;
+      toastTimer = setTimeout(() => toastEl.className = 'toast', 3000);
+    };
+
+    // ── Helpers de formato ────────────────────────────────────
+    const statusLabel  = { OPEN:'Abierto', IN_PROGRESS:'En progreso', RESOLVED:'Resuelto', CLOSED:'Cerrado', REOPENED:'Reabierto' };
+    const statusClass  = { OPEN:'badge-active', IN_PROGRESS:'badge-admin', RESOLVED:'badge-active', CLOSED:'badge-suspended', REOPENED:'badge-admin' };
+    const typeLabel    = { P:'Petición', Q:'Queja', R:'Reclamo', S:'Sugerencia' };
+    const fecha        = (d) => new Date(d).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+
+    // ── Navegación ────────────────────────────────────────────
+    const titles = { dashboard:'Dashboard', tickets:'Tickets', equipo:'Equipo' };
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const sec = item.dataset.section;
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        item.classList.add('active');
+        document.getElementById(`sec-${sec}`).classList.add('active');
+        document.getElementById('topbarTitle').textContent = titles[sec];
+        if (sec === 'dashboard') cargarDashboard();
+        if (sec === 'tickets')   cargarTickets();
+        if (sec === 'equipo')    cargarEquipo();
+      });
+    });
+
+    const irATickets = () => document.querySelector('[data-section="tickets"]').click();
+    const logout     = () => { localStorage.clear(); window.location.href = '/workspace/login'; };
+
+    // ══════════════════════════════════════════════════════════
+    //  DASHBOARD
+    // ══════════════════════════════════════════════════════════
+    const cargarDashboard = async () => {
+      const data = await api('/api/workspace/dashboard');
+      if (!data.ok) return;
+      const d = data.data;
+      document.getElementById('statTotal').textContent    = d.total;
+      document.getElementById('statOpen').textContent     = d.abiertos;
+      document.getElementById('statProgress').textContent = d.enProgreso;
+      document.getElementById('statResolved').textContent = d.resueltos;
+      document.getElementById('statClosed').textContent   = d.cerrados;
+      document.getElementById('statMembers').textContent  = d.total_miembros;
+
+      const tbody = document.getElementById('tbodyRecientes');
+      if (!d.recientes.length) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">🎫</div><p>No hay tickets aún.</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = d.recientes.map(t => `
+        <tr class="ticket-row" onclick="verDetalle('${t.referenceCode}')">
+          <td><code style="font-family:var(--font-mono);font-size:0.72rem;color:var(--accent)">${t.referenceCode}</code></td>
+          <td style="color:#fff;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.subject}</td>
+          <td><span class="type-badge type-${t.type}">${t.type}</span></td>
+          <td><span class="badge-status ${statusClass[t.status]}">${statusLabel[t.status]}</span></td>
+          <td><span class="priority-badge priority-${t.priority}">${t.priority}</span></td>
+          <td style="color:var(--text-muted);font-size:0.75rem">${fecha(t.createdAt)}</td>
+        </tr>
+      `).join('');
+    };
+
+    // ══════════════════════════════════════════════════════════
+    //  TICKETS
+    // ══════════════════════════════════════════════════════════
+    let paginaActual = 1;
+
+    const aplicarFiltros = () => { paginaActual = 1; cargarTickets(); };
+    const limpiarFiltros = () => {
+      document.getElementById('filtroSearch').value   = '';
+      document.getElementById('filtroStatus').value   = '';
+      document.getElementById('filtroType').value     = '';
+      document.getElementById('filtroPriority').value = '';
+      aplicarFiltros();
+    };
+
+    const cargarTickets = async (page = paginaActual) => {
+      const search   = document.getElementById('filtroSearch').value;
+      const status   = document.getElementById('filtroStatus').value;
+      const type     = document.getElementById('filtroType').value;
+      const priority = document.getElementById('filtroPriority').value;
+
+      const params = new URLSearchParams({ page, limit: 10 });
+      if (search)   params.append('search',   search);
+      if (status)   params.append('status',   status);
+      if (type)     params.append('type',     type);
+      if (priority) params.append('priority', priority);
+
+      const data  = await api(`/api/workspace/tickets?${params}`);
+      const tbody = document.getElementById('tbodyTickets');
+
+      if (!data.ok || !data.data.length) {
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">🎫</div><p>No hay tickets con esos filtros.</p></div></td></tr>`;
+        document.getElementById('pagination').innerHTML = '';
+        return;
+      }
+
+      tbody.innerHTML = data.data.map(t => `
+        <tr class="ticket-row" onclick="verDetalle('${t.referenceCode}')">
+          <td><code style="font-family:var(--font-mono);font-size:0.7rem;color:var(--accent)">${t.referenceCode}</code></td>
+          <td style="color:#fff;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.subject}</td>
+          <td><span class="type-badge type-${t.type}" title="${typeLabel[t.type]}">${t.type}</span></td>
+          <td><span class="badge-status ${statusClass[t.status]}">${statusLabel[t.status]}</span></td>
+          <td><span class="priority-badge priority-${t.priority}">${t.priority}</span></td>
+          <td style="color:var(--text-muted);font-size:0.75rem">${t.userEmail}</td>
+          <td style="color:var(--text-muted);font-size:0.75rem">${t.assignedAgentName || '—'}</td>
+          <td style="color:var(--text-muted);font-size:0.75rem">${fecha(t.createdAt)}</td>
+        </tr>
+      `).join('');
+
+      // Paginación
+      const p = data.pagination;
+      document.getElementById('pagination').innerHTML = `
+        <button onclick="cambiarPagina(${p.page - 1})" ${!p.hasPrev ? 'disabled' : ''}>← Anterior</button>
+        <span class="page-info">Página ${p.page} de ${p.totalPages} · ${p.total} tickets</span>
+        <button onclick="cambiarPagina(${p.page + 1})" ${!p.hasNext ? 'disabled' : ''}>Siguiente →</button>
+      `;
+    };
+
+    const cambiarPagina = (page) => { paginaActual = page; cargarTickets(page); };
+
+    // ══════════════════════════════════════════════════════════
+    //  DETALLE DEL TICKET
+    // ══════════════════════════════════════════════════════════
+    let ticketActual = null;
+
+    const verDetalle = async (refCode) => {
+      const data = await api(`/api/workspace/tickets/${refCode}`);
+      if (!data.ok) return showToast('Error al cargar el ticket', 'error');
+
+      ticketActual = data.data;
+      const t = ticketActual;
+
+      document.getElementById('detailRef').textContent     = t.referenceCode;
+      document.getElementById('detailSubject').textContent = t.subject;
+      document.getElementById('detailDesc').textContent    = t.description;
+
+      // Meta datos
+      document.getElementById('detailMeta').innerHTML = `
+        <div class="meta-item"><div class="label">Tipo</div><div class="value">${typeLabel[t.type]}</div></div>
+        <div class="meta-item"><div class="label">Estado</div><div class="value"><span class="badge-status ${statusClass[t.status]}">${statusLabel[t.status]}</span></div></div>
+        <div class="meta-item"><div class="label">Prioridad</div><div class="value"><span class="priority-badge priority-${t.priority}">${t.priority}</span></div></div>
+        <div class="meta-item"><div class="label">Usuario</div><div class="value">${t.userEmail}</div></div>
+        <div class="meta-item"><div class="label">Agente</div><div class="value">${t.assignedAgentName || '—'}</div></div>
+        <div class="meta-item"><div class="label">Categoría</div><div class="value">${t.category || '—'}</div></div>
+        <div class="meta-item"><div class="label">Creado</div><div class="value">${fecha(t.createdAt)}</div></div>
+        <div class="meta-item"><div class="label">Actualizado</div><div class="value">${fecha(t.updatedAt)}</div></div>
+      `;
+
+      // Conversación
+      const conv = document.getElementById('detailConversation');
+      conv.innerHTML = t.conversation.length
+        ? t.conversation.map(m => `
+            <div class="msg msg-${m.senderType.toLowerCase()}">
+              <div class="msg-meta">${m.senderEmail} · ${fecha(m.createdAt)}</div>
+              ${m.content}
+            </div>
+          `).join('')
+        : '<p style="color:var(--text-muted);font-size:0.8rem">Sin mensajes aún.</p>';
+
+      // Adjuntos
+      const secAdjuntos = document.getElementById('seccionAdjuntos');
+      const divAdjuntos = document.getElementById('detailAttachments');
+      if (t.attachments && t.attachments.length) {
+        secAdjuntos.style.display = 'block';
+        divAdjuntos.innerHTML = t.attachments.map(a => {
+          const esImagen = a.mimetype?.startsWith('image/');
+          const icono    = esImagen ? '🖼️' : a.mimetype?.includes('pdf') ? '📄' : '📎';
+          const tamano   = a.size ? `${(a.size / 1024).toFixed(1)} KB` : '';
+          return `
+            <a href="${a.url}" target="_blank" rel="noopener"
+              style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+                     background:var(--surface2);border:1px solid var(--border);
+                     border-radius:8px;text-decoration:none;transition:border-color 0.15s"
+              onmouseover="this.style.borderColor='var(--accent)'"
+              onmouseout="this.style.borderColor='var(--border)'">
+              ${esImagen
+                ? `<img src="${a.url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0">`
+                : `<span style="font-size:1.4rem;flex-shrink:0">${icono}</span>`
+              }
+              <div style="flex:1;min-width:0">
+                <div style="font-size:0.78rem;color:var(--text);white-space:nowrap;
+                            overflow:hidden;text-overflow:ellipsis">${a.filename}</div>
+                <div style="font-size:0.68rem;color:var(--text-muted)">${tamano} · ${fecha(a.uploadedAt || a.createdAt)}</div>
+              </div>
+              <span style="font-size:0.7rem;color:var(--accent);flex-shrink:0">Ver →</span>
+            </a>
+          `;
+        }).join('');
+      } else {
+        secAdjuntos.style.display = 'none';
+      }
+
+      // Eventos
+      document.getElementById('detailEvents').innerHTML = t.events.map(e => `
+        <div style="display:flex;gap:8px;align-items:flex-start;font-size:0.75rem;color:var(--text-muted)">
+          <span style="color:var(--accent);flex-shrink:0">•</span>
+          <span>${e.description} <span style="opacity:0.6">— ${fecha(e.createdAt)}</span></span>
+        </div>
+      `).join('');
+
+      // Selector de estado
+      document.getElementById('actionStatus').value = '';
+
+      // Selector de agente — carga el equipo
+      await cargarSelectAgente();
+
+      // ── Addons: recarga y muestra botones frescos ───────────
+      try {
+        const addonsData = await api('/api/workspace/addons');
+        if (addonsData.ok) addonsActivos = addonsData.data;
+      } catch(e) { /* usa los que ya había */ }
+      // IA disponible si el cliente escribió algo (mensaje USER) o si hay descripción en el ticket
+      const tieneContextoCliente = t.conversation?.some(m => m.senderType === 'USER') || !!t.description;
+      document.getElementById('btnAISuggest').style.display =
+        (addonsActivos['AI_ASSIST'] && tieneContextoCliente) ? 'inline-flex' : 'none';
+      document.getElementById('btnAdjunto').style.display =
+        addonsActivos['ATTACHMENTS'] ? 'inline-flex' : 'none';
+      document.getElementById('areaIA').style.display = 'none';
+
+      document.getElementById('detailPanel').classList.add('open');
+      document.getElementById('detailOverlay').classList.add('open');
+    };
+
+    const cerrarDetalle = () => {
+      document.getElementById('detailPanel').classList.remove('open');
+      document.getElementById('detailOverlay').classList.remove('open');
+      ticketActual = null;
+    };
+
+    // ── Cargar agentes en el select del detalle ───────────────
+    const cargarSelectAgente = async () => {
+      const data = await api('/api/workspace/equipo');
+      const sel  = document.getElementById('actionAgent');
+      sel.innerHTML = '<option value="">Asignar agente...</option>';
+      if (data.ok) {
+        data.data.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value       = JSON.stringify({ id: m.user_id, name: m.full_name });
+          opt.textContent = `${m.full_name} (${m.role})`;
+          if (ticketActual?.assignedAgentId === m.user_id) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      }
+    };
+
+    // ── Cambiar estado desde el detalle ──────────────────────
+    const cambiarEstado = async () => {
+      const status = document.getElementById('actionStatus').value;
+      if (!status || !ticketActual) return;
+
+      const data = await api(`/api/workspace/tickets/${ticketActual.referenceCode}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status })
+      });
+
+      if (data.ok) {
+        showToast('Estado actualizado');
+        await verDetalle(ticketActual.referenceCode); // Recarga el detalle
+        cargarTickets(); // Actualiza la tabla
+      } else showToast(data.message, 'error');
+    };
+
+    // ── Asignar agente desde el detalle ──────────────────────
+    const asignarAgente = async () => {
+      const val = document.getElementById('actionAgent').value;
+      if (!val || !ticketActual) return;
+
+      const agente = JSON.parse(val);
+      const data   = await api(`/api/workspace/tickets/${ticketActual.referenceCode}`, {
+        method: 'PUT',
+        body: JSON.stringify({ assignedAgentId: agente.id, assignedAgentName: agente.name })
+      });
+
+      if (data.ok) {
+        showToast(`Asignado a ${agente.name}`);
+        await verDetalle(ticketActual.referenceCode);
+        cargarTickets();
+      } else showToast(data.message, 'error');
+    };
+
+    // ── Enviar mensaje ────────────────────────────────────────
+    const enviarMensaje = async () => {
+      const content = document.getElementById('msgInput').value.trim();
+      if (!content || !ticketActual) return;
+
+      const data = await api(`/api/workspace/tickets/${ticketActual.referenceCode}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ content })
+      });
+
+      if (data.ok) {
+        document.getElementById('msgInput').value = '';
+        showToast('Mensaje enviado');
+        await verDetalle(ticketActual.referenceCode); // Recarga conversación
+      } else showToast(data.message, 'error');
+    };
+
+    // ══════════════════════════════════════════════════════════
+    //  CREAR TICKET
+    // ══════════════════════════════════════════════════════════
+    const abrirModalCrear = () => {
+      document.getElementById('newUserEmail').value = '';
+      document.getElementById('newSubject').value   = '';
+      document.getElementById('newDesc').value      = '';
+      document.getElementById('newCategory').value  = '';
+      eliminarAdjModal(); // limpia cualquier adjunto anterior
+      // Muestra la sección de adjunto solo si el addon está activo
+      document.getElementById('modalAdjSeccion').style.display =
+        addonsActivos['ATTACHMENTS'] ? 'block' : 'none';
+      document.getElementById('modalCrear').classList.add('visible');
+    };
+
+    const crearTicket = async () => {
+      const userEmail   = document.getElementById('newUserEmail').value.trim();
+      const subject     = document.getElementById('newSubject').value.trim();
+      const description = document.getElementById('newDesc').value.trim();
+      const type        = document.getElementById('newType').value;
+      const priority    = document.getElementById('newPriority').value;
+      const category    = document.getElementById('newCategory').value.trim();
+
+      if (!userEmail || !subject || !description)
+        return showToast('Email, asunto y descripción son requeridos', 'error');
+
+      const data = await api('/api/workspace/tickets', {
+        method: 'POST',
+        body: JSON.stringify({ userEmail, subject, description, type, priority, category })
+      });
+
+      if (data.ok) {
+        // Si hay adjunto en staging, súbelo al ticket recién creado
+        if (document._adjModal && data.data?.referenceCode) {
+          const formData = new FormData();
+          formData.append('file', document._adjModal);
+          await fetch(
+            `/api/workspace/tickets/${data.data.referenceCode}/attachments`,
+            { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData }
+          ).catch(() => {});
+          document._adjModal = null;
+        }
+        showToast('Ticket creado exitosamente');
+        cerrarModal('modalCrear');
+        cargarTickets();
+      } else showToast(data.message, 'error');
+    };
+
+    // ══════════════════════════════════════════════════════════
+    //  EQUIPO
+    // ══════════════════════════════════════════════════════════
+    const cargarEquipo = async () => {
+      const data  = await api('/api/workspace/equipo');
+      const tbody = document.getElementById('tbodyEquipo');
+      if (!data.ok || !data.data.length) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">👥</div><p>No hay miembros.</p></div></td></tr>`;
+        return;
+      }
+      const esAdmin = user.role === 'ADMIN';
+      tbody.innerHTML = data.data.map(m => {
+        const suspendido = !m.member_active;
+        return `
+        <tr style="${suspendido ? 'opacity:0.55' : ''}">
+          <td style="color:${suspendido ? 'var(--text-muted)' : '#fff'};font-weight:500">
+            ${m.full_name}
+            ${suspendido ? '<span style="font-size:0.68rem;color:#ef4444;margin-left:6px">(suspendido)</span>' : ''}
+          </td>
+          <td>${m.email}</td>
+          <td><span class="badge-status ${m.role === 'ADMIN' ? 'badge-admin' : 'badge-agent'}">${m.role}</span></td>
+          <td style="color:var(--text-muted);font-size:0.75rem">${fecha(m.joined_at)}</td>
+          <td>
+            ${esAdmin && m.user_id !== user.id ? `
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn btn-ghost btn-sm" onclick="toggleMiembro(${m.user_id})">
+                  ${suspendido ? 'Reactivar' : 'Suspender'}
+                </button>
+                ${!suspendido ? `
+                <button class="btn btn-sm"
+                  style="color:#ef4444;border:1px solid rgba(239,68,68,0.3);background:transparent;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.75rem"
+                  onclick="eliminarMiembro(${m.user_id}, '${m.full_name}')">
+                  Eliminar
+                </button>` : ''}
+              </div>` : '<span style="color:var(--text-muted);font-size:0.75rem">—</span>'}
+          </td>
+        </tr>`;
+      }).join('');
+    };
+
+    // ── Modales ───────────────────────────────────────────────
+    const cerrarModal = (id) => document.getElementById(id).classList.remove('visible');
+
+    const confirmar = (titulo, mensaje, advertencia, onConfirm) => {
+      document.getElementById('confirmTitle').textContent   = titulo;
+      document.getElementById('confirmMsg').textContent     = mensaje;
+      document.getElementById('confirmWarning').textContent = advertencia;
+      document.getElementById('confirmBtn').onclick = () => { cerrarModal('modalConfirm'); onConfirm(); };
+      document.getElementById('modalConfirm').classList.add('visible');
+    };
+
+    // ── Acciones equipo (solo ADMIN) ──────────────────────────
+    const toggleMiembro = async (userId) => {
+      const data = await api(`/api/workspace/equipo/${userId}/toggle`, { method: 'PATCH' });
+      if (data.ok) { showToast(data.message); cargarEquipo(); }
+      else showToast(data.message, 'error');
+    };
+
+    const eliminarMiembro = (userId, nombre) => {
+      confirmar(
+        'Eliminar miembro',
+        `Estás a punto de eliminar a "${nombre}" de este workspace. Perderá acceso al panel y a todos los tickets asignados.`,
+        'Esta acción no se puede deshacer.',
+        async () => {
+          const data = await api(`/api/workspace/equipo/${userId}`, { method: 'DELETE' });
+          if (data.ok) { showToast(data.message); cargarEquipo(); }
+          else showToast(data.message, 'error');
+        }
+      );
+    };
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('visible'); });
+    });
+
+    // ══════════════════════════════════════════════════════════
+    //  ADDONS — se cargan una sola vez al entrar al panel
+    // ══════════════════════════════════════════════════════════
+    let addonsActivos = {};
+
+    const cargarAddons = async () => {
+      const data = await api('/api/workspace/addons');
+      if (data.ok) addonsActivos = data.data;
+    };
+
+    // ══════════════════════════════════════════════════════════
+    //  ADDON: AI_ASSIST — Sugerir respuesta
+    // ══════════════════════════════════════════════════════════
+    const sugerirIA = async () => {
+      if (!ticketActual) return;
+      const btn = document.getElementById('btnAISuggest');
+      btn.disabled    = true;
+      btn.textContent = '🤖 Generando...';
+
+      const data = await api(`/api/workspace/tickets/${ticketActual.referenceCode}/ai-suggest`);
+
+      btn.disabled    = false;
+      btn.textContent = '🤖 Sugerir respuesta';
+
+      if (data.ok) {
+        document.getElementById('textoIA').value        = data.data.sugerencia;
+        document.getElementById('areaIA').style.display = 'block';
+        document.getElementById('textoIA').focus();
+      } else {
+        showToast(data.message, 'error');
+      }
+    };
+
+    const usarSugerencia = () => {
+      const texto = document.getElementById('textoIA').value.trim();
+      if (texto) document.getElementById('msgInput').value = texto;
+      cerrarIA();
+      document.getElementById('msgInput').focus();
+    };
+
+    const cerrarIA = () => {
+      document.getElementById('areaIA').style.display = 'none';
+      document.getElementById('textoIA').value        = '';
+    };
+
+    // ══════════════════════════════════════════════════════════
+    //  ADDON: ATTACHMENTS — Staging (seleccionar → previsualizar → subir)
+    // ══════════════════════════════════════════════════════════
+    let _adjAdmin = null; // File en staging
+
+    const seleccionarAdjuntoAdmin = (input) => {
+      const file = input.files[0];
+      if (!file) return;
+      _adjAdmin = file;
+      document.getElementById('adjAdminIcon').textContent   =
+        file.type.startsWith('image/') ? '🖼️' : file.type.includes('pdf') ? '📄' : '📎';
+      document.getElementById('adjAdminNombre').textContent = file.name;
+      document.getElementById('adjAdminTamano').textContent = `${(file.size/1024).toFixed(1)} KB`;
+      document.getElementById('adjAdminPreview').style.display = 'block';
+    };
+
+    const eliminarAdjuntoAdmin = () => {
+      _adjAdmin = null;
+      document.getElementById('inputAdjunto').value            = '';
+      document.getElementById('adjAdminPreview').style.display = 'none';
+    };
+
+    const enviarAdjuntoAdmin = async () => {
+      if (!_adjAdmin || !ticketActual) return;
+
+      const formData = new FormData();
+      formData.append('file', _adjAdmin);
+      const btnSubir = document.querySelector('#adjAdminPreview button:last-child');
+      btnSubir.disabled    = true;
+      btnSubir.textContent = '⏳';
+
+      try {
+        const res = await fetch(
+          `/api/workspace/tickets/${ticketActual.referenceCode}/attachments`,
+          { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData }
+        );
+        const data = await res.json();
+        if (data.ok) {
+          showToast(`Archivo adjuntado: ${_adjAdmin.name}`);
+          eliminarAdjuntoAdmin();
+          await verDetalle(ticketActual.referenceCode);
+        } else {
+          showToast(data.message, 'error');
+          btnSubir.disabled    = false;
+          btnSubir.textContent = '⬆ Subir';
+        }
+      } catch (e) {
+        showToast('Error al subir el archivo', 'error');
+        btnSubir.disabled    = false;
+        btnSubir.textContent = '⬆ Subir';
+      }
+    };
+
+    // ── Staging adjunto modal crear ticket ───────────────────
+    const seleccionarAdjModal = (input) => {
+      const file = input.files[0];
+      if (!file) return;
+      document._adjModal = file;
+      document.getElementById('modalAdjIcon').textContent    =
+        file.type.startsWith('image/') ? '🖼️' : file.type.includes('pdf') ? '📄' : '📎';
+      document.getElementById('modalAdjNombre').textContent  = file.name;
+      document.getElementById('modalAdjTamano').textContent  = `${(file.size/1024).toFixed(1)} KB`;
+      document.getElementById('modalAdjTexto').textContent   = 'Cambiar archivo...';
+      document.getElementById('modalAdjPreview').style.display = 'flex';
+      document.getElementById('modalAdjLabel').style.borderColor = 'var(--accent)';
+    };
+
+    const eliminarAdjModal = () => {
+      document._adjModal = null;
+      const inp = document.getElementById('modalAdjInput');
+      if (inp) inp.value = '';
+      const prev = document.getElementById('modalAdjPreview');
+      if (prev) prev.style.display = 'none';
+      const txt = document.getElementById('modalAdjTexto');
+      if (txt) txt.textContent = 'Seleccionar archivo...';
+      const lbl = document.getElementById('modalAdjLabel');
+      if (lbl) lbl.style.borderColor = 'var(--border)';
+    };
+
+    // Carga inicial — addons primero (necesarios para mostrar botones en tickets)
+    try { await cargarAddons();    } catch(e) { console.error('Addons:', e); }
+    try { await cargarDashboard(); } catch(e) { console.error('Dashboard:', e); }
+
+    // ── Expone funciones al scope global ──────────────────────
+    window.logout                  = logout;
+    window.irATickets              = irATickets;
+    window.limpiarFiltros          = limpiarFiltros;
+    window.aplicarFiltros          = aplicarFiltros;
+    window.cambiarPagina           = cambiarPagina;
+    window.verDetalle              = verDetalle;
+    window.cerrarDetalle           = cerrarDetalle;
+    window.cambiarEstado           = cambiarEstado;
+    window.asignarAgente           = asignarAgente;
+    window.enviarMensaje           = enviarMensaje;
+    window.abrirModalCrear         = abrirModalCrear;
+    window.crearTicket             = crearTicket;
+    window.cerrarModal             = cerrarModal;
+    window.sugerirIA               = sugerirIA;
+    window.usarSugerencia          = usarSugerencia;
+    window.cerrarIA                = cerrarIA;
+    window.seleccionarAdjuntoAdmin = seleccionarAdjuntoAdmin;
+    window.eliminarAdjuntoAdmin    = eliminarAdjuntoAdmin;
+    window.enviarAdjuntoAdmin      = enviarAdjuntoAdmin;
+    window.seleccionarAdjModal     = seleccionarAdjModal;
+    window.eliminarAdjModal        = eliminarAdjModal;
+    window.toggleMiembro           = toggleMiembro;
+    window.eliminarMiembro         = eliminarMiembro;
+  })();
+  </script>
+</body>
+</html>

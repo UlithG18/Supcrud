@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner Login · SupCrud</title>
+  <link rel="stylesheet" href="/assets/css/auth.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+
+    <div class="auth-brand">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">Sup<span>Crud</span></div>
+      </div>
+      <div class="tagline">by Crudzaso · Panel de Administración</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="role-badge"><span class="dot"></span> Owner Access</div>
+      <h2>Iniciar sesión</h2>
+      <p class="subtitle">Acceso exclusivo para administradores de SupCrud</p>
+
+      <!-- Formulario de login -->
+      <div class="form-group">
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" placeholder="tu@email.com" autocomplete="email">
+        <div class="field-error" id="emailError">Ingresa un email válido</div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+        <div class="field-error" id="passwordError">La contraseña es requerida</div>
+      </div>
+
+      <button class="btn-primary" id="btnLogin">
+        <span class="btn-text">Ingresar al panel</span>
+        <div class="spinner"></div>
+      </button>
+
+      <!-- Alerta de respuesta del servidor -->
+      <div class="alert" id="alert"></div>
+    </div>
+
+    <div class="auth-footer">
+      
+      &nbsp;·&nbsp;
+      <a href="/">← Volver</a>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Elementos del DOM ─────────────────────────────────────
+    const emailInput    = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const btnLogin      = document.getElementById('btnLogin');
+    const alert         = document.getElementById('alert');
+
+    // ── Mostrar alerta de respuesta ───────────────────────────
+    const showAlert = (message, type) => {
+      alert.textContent = (type === 'success' ? '✓ ' : '✕ ') + message;
+      alert.className   = `alert ${type} visible`;
+    };
+
+    // ── Estado del botón ──────────────────────────────────────
+    const setLoading = (loading) => {
+      btnLogin.disabled = loading;
+      btnLogin.classList.toggle('loading', loading);
+    };
+
+    // ── Validación básica de campos ───────────────────────────
+    const validate = () => {
+      let valid = true;
+      document.querySelectorAll('.field-error').forEach(e => e.classList.remove('visible'));
+      document.querySelectorAll('input').forEach(i => i.classList.remove('error'));
+
+      if (!emailInput.value.includes('@')) {
+        document.getElementById('emailError').classList.add('visible');
+        emailInput.classList.add('error');
+        valid = false;
+      }
+      if (!passwordInput.value.trim()) {
+        document.getElementById('passwordError').classList.add('visible');
+        passwordInput.classList.add('error');
+        valid = false;
+      }
+      return valid;
+    };
+
+    // ── Submit ────────────────────────────────────────────────
+    const handleLogin = async () => {
+      if (!validate()) return;
+
+      setLoading(true);
+      alert.className = 'alert'; // Oculta alerta anterior
+
+      try {
+        const response = await fetch('/api/auth/owner/login', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            email:    emailInput.value.trim().toLowerCase(),
+            password: passwordInput.value
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+          // Guarda el token en localStorage para usarlo en todas las peticiones
+          localStorage.setItem('token',     data.data.token);
+          localStorage.setItem('user',      JSON.stringify(data.data.user));
+          localStorage.setItem('role',      'OWNER');
+
+          showAlert('Ingreso exitoso. Redirigiendo...', 'success');
+
+          // Redirige al panel del owner (próximo módulo)
+          setTimeout(() => window.location.href = '/owner/dashboard', 1000);
+        } else {
+          showAlert(data.message, 'error');
+        }
+      } catch (e) {
+        showAlert('No se pudo conectar con el servidor', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // ── Eventos ───────────────────────────────────────────────
+    btnLogin.addEventListener('click', handleLogin);
+
+    // Permite enviar con Enter desde cualquier input
+    [emailInput, passwordInput].forEach(input =>
+      input.addEventListener('keydown', e => e.key === 'Enter' && handleLogin())
+    );
+
+    // Si ya hay sesión activa como Owner, redirige directo
+    if (localStorage.getItem('role') === 'OWNER' && localStorage.getItem('token')) {
+      window.location.href = '/owner/dashboard';
+    }
+  </script>
+</body>
+</html>
